@@ -1,0 +1,122 @@
+@startuml
+
+interface prometheus.Metric {
+    +Desc() *Desc
+    +Write(*dto.Metric) error
+}
+
+interface prometheus.Collector {
+    +Describe(chan<- *Desc)
+    +Collect(chan<- Metric)
+}
+
+class prometheus.Opts {
+	+Namespace string
+	+Subsystem string
+	+Name      string
+	+Help      string
+	+ConstLabels Labels
+}
+
+class prometheus.Desc {
+   -constLabelPairs : []*dto.LabelPair
+   -dimHash : uint64
+   -err : error
+   -fqName : string
+   -help : string
+   -id : uint64
+   -variableLabels : []string
+
+   +String() : string
+   +NewDesc(fqName, help string, variableLabels []string, constLabels Labels) : *Desc
+   +NewInvalidDesc(err error) : *Desc
+}
+
+interface prometheus.GaugeFunc {
+   +Collector
+   +Metric
+}
+
+interface prometheus.Gauge {
+   +Collector
+   +Metric
+
+   +Add(float64)
+   +Dec()
+   +Inc()
+   +Set(float64)
+   +SetToCurrentTime()
+   +Sub(float64)
+}
+
+interface prometheus.Counter {
+   +Collector
+   +Metric
+
+   +Add(float64)
+   +Inc()
+}
+
+class prometheus.Registry {
+   -collectorsByID : map[uint64]Collector
+   -descIDs : map[uint64]
+   -dimHashesByName : map[string]uint64
+   -mtx : sync.RWMutex
+   -pedanticChecksEnabled : bool
+   -uncheckedCollectors : []Collector
+
+   +Gather() : []*dto.MetricFamily, error
+   +MustRegister(cs ...Collector)
+   +Register(c Collector) : error
+   +Unregister(c Collector) : bool
+}
+
+interface prometheus.Registerer {
+   +MustRegister(...Collector)
+   +Register(Collector) : error
+   +Unregister(Collector) : bool
+}
+
+interface prometheus.Gatherer {
+   +Gather() : []*dto.MetricFamily, error
+}
+
+class prometheus.MetricVec {
+	-children map[uint64][]metricWithLabelValues
+	-desc     *Desc
+	-newMetric   func(labelValues ...string) Metric
+	-hashAdd     func(h uint64, s string) uint64
+	-hashAddByte func(h uint64, b byte) uint64
+
+    +Collect(ch chan Metric)
+    +Delete(labels Labels) : bool
+    +DeleteLabelValues(lvs ...string) : bool
+    +Describe(ch chan *Desc)
+    +GetMetricWith(labels Labels) : Metric, error
+    +GetMetricWithLabelValues(lvs ...string) : Metric, error
+    +Reset()
+    +With(labels Labels) : Metric
+    +WithLabelValues(lvs ...string) : Metric
+}
+
+class prometheus.GaugeVec {
+	+*MetricVec
+
+    +GetMetricWith(labels Labels) : Gauge, error
+    +GetMetricWithLabelValues(lvs ...string) : Gauge, error
+    +With(labels Labels) : Gauge
+    +WithLabelValues(lvs ...string) : Gauge
+}
+
+prometheus.Collector <|-- prometheus.Gauge
+prometheus.Metric <|-- prometheus.Gauge
+prometheus.Collector <|-- prometheus.GaugeFunc
+prometheus.Metric <|-- prometheus.GaugeFunc
+prometheus.Collector <|-- prometheus.Counter
+prometheus.Metric <|-- prometheus.Counter
+prometheus.Registerer <|-- prometheus.Registry
+prometheus.Gatherer <|-- prometheus.Registry
+prometheus.Collector <|-- prometheus.MetricVec
+prometheus.MetricVec <-- prometheus.GaugeVec
+
+@enduml

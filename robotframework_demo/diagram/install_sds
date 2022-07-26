@@ -1,0 +1,3877 @@
+[root@ceph-1 sds]# ./install.sh 10.255.101.73
+2018-11-19 23:58:56 [INFO] Decompressing sds-release ...
+2018-11-19 23:59:19 [INFO] Installing boot ...
+2018-11-19 23:59:41 [INFO] Installing packages ...
+Installing ceph
+(41/41) ================================================== (100%)
+Installing nfs-ganesha
+(14/14) ================================================== (100%)
+Installing object-routing
+(1/1) ================================================== (100%)
+Installing sds-nas
+(1/1) ================================================== (100%)
+Installing sds-snmp
+(1/1) ================================================== (100%)
+Installing xmd-api
+(2/2) ================================================== (100%)
+Installing demon
+(39/39) ================================================== (100%)
+Installing formation
+(1/1) ================================================== (100%)
+Installing wizard
+(1/1) ================================================== (100%)
+Installing xdc
+(5/5) ================================================== (100%)
+2018-11-20 00:02:30 [INFO] Installing /opt/sds/installer ...
+2018-11-20 00:03:11 [INFO] Starting docker ...
+2018-11-20 00:03:13 [INFO] Loading docker images ...
+(10/10) ================================================== (100%)
+Creating sds-postgres ... done
+Restarting sds-postgres ... done
+Creating sds-pgbouncer ... done
+Created symlink from /etc/systemd/system/multi-user.target.wants/sds-etcd.service to /usr/lib/systemd/system/sds-etcd.service.
+Created symlink from /etc/systemd/system/multi-user.target.wants/sds-etcd-proxy.service to /usr/lib/systemd/system/sds-etcd-proxy.service.
+2018-11-20 00:08:38 [INFO] Setting up nginx ...
+Creating sds-nginx ... done
+Creating sds-prometheus ... done
+2018-11-20 00:08:45 [INFO] Removing elasticsearch ...
+2018-11-20 00:08:45 [INFO] Initializing elasticsearch ...
+Creating sds-elasticsearch ... done
+2018-11-20 00:09:40 [INFO] Waiting for elasticsearch ...
+2018-11-20 00:10:47 [INFO] Elasticsearch is ready
+2018-11-20 00:10:47 [INFO] Stopping xmsd ...
+2018-11-20 00:10:47 [INFO] Generate initial admin token ...
+2018-11-20 00:10:47 [INFO] Migrating database ...
+2018/11/20 00:10:50 [I] [migration.go:110] start upgrade Init_20160523_175322
+2018/11/20 00:10:50 [I] [migration.go:159] exec sql: 
+DROP TABLE IF EXISTS "action_log";
+DROP TABLE IF EXISTS "alert_rule";
+DROP TABLE IF EXISTS "alert";
+DROP TABLE IF EXISTS "cluster";
+DROP TABLE IF EXISTS "cluster_stat";
+DROP TABLE IF EXISTS "conf_item";
+DROP TABLE IF EXISTS "disk";
+DROP TABLE IF EXISTS "disk_stat";
+DROP TABLE IF EXISTS "osd_qos";
+DROP TABLE IF EXISTS "host";
+DROP TABLE IF EXISTS "host_stat";
+DROP TABLE IF EXISTS "host_fc_port";
+DROP TABLE IF EXISTS "license";
+DROP TABLE IF EXISTS "protection_domain";
+DROP TABLE IF EXISTS "protection_domain_stat";
+DROP TABLE IF EXISTS "pool";
+DROP TABLE IF EXISTS "pool_stat";
+DROP TABLE IF EXISTS "osd";
+DROP TABLE IF EXISTS "placement_group";
+DROP TABLE IF EXISTS "placement_group_scrub";
+DROP TABLE IF EXISTS "placement_group_osd";
+DROP TABLE IF EXISTS "pool_property";
+DROP TABLE IF EXISTS "volume";
+DROP TABLE IF EXISTS "snapshot";
+DROP TABLE IF EXISTS "volume_stat";
+DROP TABLE IF EXISTS "volume_qos_spec";
+DROP TABLE IF EXISTS "boot_node";
+DROP TABLE IF EXISTS "service";
+DROP TABLE IF EXISTS "access_target";
+DROP TABLE IF EXISTS "server_node";
+DROP TABLE IF EXISTS "volume_mapping";
+DROP TABLE IF EXISTS "client";
+DROP TABLE IF EXISTS "client_mapping";
+DROP TABLE IF EXISTS "client_fc_port";
+DROP TABLE IF EXISTS "client_acl";
+DROP TABLE IF EXISTS "client_acl_mapping";
+DROP TABLE IF EXISTS "client_iqn";
+DROP TABLE IF EXISTS "task";
+DROP TABLE IF EXISTS "user";
+DROP TABLE IF EXISTS "token";
+DROP TABLE IF EXISTS "access_target_clients";
+DROP TABLE IF EXISTS "client_volumes";
+DROP TABLE IF EXISTS "object_storage";
+DROP TABLE IF EXISTS "object_storage_gateway";
+DROP TABLE IF EXISTS "object_storage_gateway_stat";
+DROP TABLE IF EXISTS "object_storage_user";
+DROP TABLE IF EXISTS "object_storage_user_stat";
+DROP TABLE IF EXISTS "object_storage_key";
+DROP TABLE IF EXISTS "object_storage_policy";
+DROP TABLE IF EXISTS "object_storage_bucket";
+DROP TABLE IF EXISTS "object_storage_bucket_stat";
+DROP TABLE IF EXISTS "object_storage_archive_pool";
+DROP TABLE IF EXISTS "partition";
+DROP TABLE IF EXISTS "alert_group";
+DROP TABLE IF EXISTS "alert_group_map";
+DROP TABLE IF EXISTS "email_group";
+DROP TABLE IF EXISTS "smart_attr";
+
+2018/11/20 00:10:50 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ActionLog"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "action_log" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "user_id" bigint,
+    "resource_type" varchar(255) NOT NULL DEFAULT '' ,
+    "resource_id" bigint,
+    "action" varchar(255) NOT NULL DEFAULT '' ,
+    "old_data" text,
+    "new_data" text,
+    "status" varchar(64) NOT NULL DEFAULT '' ,
+    "message" text,
+    "start" timestamp with time zone NOT NULL,
+    "finish" timestamp with time zone,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AlertRule"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "alert_rule" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "type" varchar(255) NOT NULL DEFAULT '' ,
+    "resource_type" varchar(255) NOT NULL DEFAULT '' ,
+    "trigger_value" varchar(255) NOT NULL DEFAULT '' ,
+    "trigger_mode" varchar(32) NOT NULL DEFAULT 'eq' ,
+    "trigger_period" bigint CHECK("trigger_period" >= 0),
+    "level" varchar(255) NOT NULL DEFAULT '' ,
+    "update" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    UNIQUE ("type", "resource_type", "trigger_value", "level")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Alert"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "alert" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "type" varchar(255) NOT NULL DEFAULT '' ,
+    "resource_type" varchar(255) NOT NULL DEFAULT '' ,
+    "trigger_value" varchar(255) NOT NULL DEFAULT '' ,
+    "trigger_mode" varchar(32) NOT NULL DEFAULT 'eq' ,
+    "trigger_period" bigint CHECK("trigger_period" >= 0) NOT NULL DEFAULT '0' ,
+    "level" varchar(255) NOT NULL DEFAULT '' ,
+    "resource_id" bigint,
+    "data" text,
+    "alert_value" varchar(255) NOT NULL DEFAULT '' ,
+    "acked" bool NOT NULL DEFAULT '0' ,
+    "ack_time" timestamp with time zone,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Cluster"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cluster" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "fs_id" varchar(64) NOT NULL DEFAULT ''  UNIQUE,
+    "status" varchar(64) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    "maintained" bool NOT NULL DEFAULT '0',
+    "disk_lighting_mode" varchar(64) NOT NULL DEFAULT ''
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClusterStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cluster_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "cluster_id" bigint NOT NULL,
+    "total_kbyte" bigint CHECK("total_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "used_kbyte" bigint CHECK("used_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "error_kbyte" bigint CHECK("error_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "healthy_percent" double precision NOT NULL DEFAULT '0' ,
+    "recovery_percent" double precision NOT NULL DEFAULT '0' ,
+    "degraded_percent" double precision NOT NULL DEFAULT '0' ,
+    "unavailable_percent" double precision NOT NULL DEFAULT '0' ,
+    "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_iops" bigint CHECK("recovery_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_bandwidth_kbyte" bigint CHECK("recovery_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "host_in_num" bigint CHECK("host_in_num" >= 0) NOT NULL DEFAULT '0' ,
+    "host_out_num" bigint CHECK("host_out_num" >= 0) NOT NULL DEFAULT '0' ,
+    "host_active_num" bigint CHECK("host_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "host_warning_num" bigint CHECK("host_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "host_error_num" bigint CHECK("host_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_in_num" bigint CHECK("osd_in_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_out_num" bigint CHECK("osd_out_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_active_num" bigint CHECK("osd_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_warning_num" bigint CHECK("osd_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_error_num" bigint CHECK("osd_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pd_active_num" bigint CHECK("pd_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pd_warning_num" bigint CHECK("pd_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pd_error_num" bigint CHECK("pd_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_active_num" bigint CHECK("pool_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_degraded_num" bigint CHECK("pool_degraded_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_recovering_num" bigint CHECK("pool_recovering_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_error_num" bigint CHECK("pool_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "block_volume_active_num" bigint CHECK("block_volume_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "block_volume_warning_num" bigint CHECK("block_volume_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "block_volume_error_num" bigint CHECK("block_volume_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "client_active_num" bigint CHECK("client_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "client_warning_num" bigint CHECK("client_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "client_error_num" bigint CHECK("client_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "object_storage_user_num" bigint CHECK("object_storage_user_num" >= 0) NOT NULL DEFAULT '0' ,
+    "object_storage_bucket_num" bigint CHECK("object_storage_bucket_num" >= 0) NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "cluster_stat_cluster_id_create_desc" on "cluster_stat" ("cluster_id", "create" desc);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ConfItem"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "conf_item" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "key" varchar(128) NOT NULL DEFAULT '' ,
+    "type" varchar(128) NOT NULL DEFAULT '' ,
+    "value" varchar(256) NOT NULL DEFAULT '' ,
+    UNIQUE ("key", "type")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Disk"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "disk" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "device" varchar(255) NOT NULL DEFAULT '' ,
+    "bytes" bigint CHECK("bytes" >= 0) NOT NULL DEFAULT '0' ,
+    "model" varchar(255) NOT NULL DEFAULT '' ,
+    "serial" varchar(255) NOT NULL DEFAULT '' ,
+    "wwid" varchar(255) NOT NULL DEFAULT '',
+    "rotational" bool NOT NULL DEFAULT '0' ,
+    "rotation_rate" varchar(255) NOT NULL DEFAULT '' ,
+    "disk_type" varchar(255) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "lighting_status" varchar(255) NOT NULL DEFAULT '' ,
+    "action_status" varchar(255) NOT NULL DEFAULT '' ,
+    "is_cache" bool NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    "cache_create" timestamp with time zone
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.DiskStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "disk_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "disk_id" bigint NOT NULL,
+    "total_kbyte" bigint CHECK("total_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "used_kbyte" bigint CHECK("used_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "uptime" bigint CHECK("uptime" >= 0) NOT NULL DEFAULT '0' ,
+    "read_ios" bigint CHECK("read_ios" >= 0) NOT NULL DEFAULT '0' ,
+    "read_merged" bigint CHECK("read_merged" >= 0) NOT NULL DEFAULT '0' ,
+    "read_sectors" bigint CHECK("read_sectors" >= 0) NOT NULL DEFAULT '0' ,
+    "read_ticks" bigint CHECK("read_ticks" >= 0) NOT NULL DEFAULT '0' ,
+    "write_ios" bigint CHECK("write_ios" >= 0) NOT NULL DEFAULT '0' ,
+    "write_merged" bigint CHECK("write_merged" >= 0) NOT NULL DEFAULT '0' ,
+    "write_sectors" bigint CHECK("write_sectors" >= 0) NOT NULL DEFAULT '0' ,
+    "write_ticks" bigint CHECK("write_ticks" >= 0) NOT NULL DEFAULT '0' ,
+    "io_ticks" bigint CHECK("io_ticks" >= 0) NOT NULL DEFAULT '0' ,
+    "weighted_io_ticks" bigint CHECK("weighted_io_ticks" >= 0) NOT NULL DEFAULT '0' ,
+    "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "read_merged_ps" bigint CHECK("read_merged_ps" >= 0) NOT NULL DEFAULT '0' ,
+    "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "read_io_wait_us" bigint CHECK("read_io_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "write_merged_ps" bigint CHECK("write_merged_ps" >= 0) NOT NULL DEFAULT '0' ,
+    "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "write_io_wait_us" bigint CHECK("write_io_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "kbyte_per_io" bigint CHECK("kbyte_per_io" >= 0) NOT NULL DEFAULT '0' ,
+    "io_wait_us" bigint CHECK("io_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "avg_queue_len" bigint CHECK("avg_queue_len" >= 0) NOT NULL DEFAULT '0' ,
+    "io_util" double precision NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "disk_stat_disk_id" ON "disk_stat" ("disk_id");
+CREATE INDEX "disk_stat_create" ON "disk_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.OsdQos"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "osd_qos" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "mode" integer NOT NULL DEFAULT '0' ,
+    "bandwidth" bigint NOT NULL DEFAULT '0' ,
+    "bandwidth_max" bigint NOT NULL DEFAULT '0' ,
+    "client_threshold" bigint NOT NULL DEFAULT '0'
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Host"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "host" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "protection_domain_id" bigint,
+    "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+    "uuid" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "public_ips" varchar(128) NOT NULL DEFAULT '' ,
+    "private_ip" varchar(128) NOT NULL DEFAULT '' ,
+    "admin_ip" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "cpu_model" varchar(128) NOT NULL DEFAULT '' ,
+    "cores" integer NOT NULL DEFAULT '0' ,
+    "memory_kbyte" bigint CHECK("memory_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "os" varchar(128) NOT NULL DEFAULT '' ,
+    "rack" varchar(128) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "up" bool NOT NULL DEFAULT '0' ,
+    "version" bigint CHECK("version" >= 0) NOT NULL DEFAULT '0' ,
+    "equal_count" bigint CHECK("equal_count" >= 0) NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.HostStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "host_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "load1min" double precision NOT NULL DEFAULT '0' ,
+    "load5min" double precision NOT NULL DEFAULT '0' ,
+    "load15min" double precision NOT NULL DEFAULT '0' ,
+    "cpu_util" double precision NOT NULL DEFAULT '0' ,
+    "mem_usage_percent" double precision NOT NULL DEFAULT '0' ,
+    "interrupts_ps" bigint CHECK("interrupts_ps" >= 0) NOT NULL DEFAULT '0' ,
+    "context_switch_ps" bigint CHECK("context_switch_ps" >= 0) NOT NULL DEFAULT '0' ,
+    "page_paging_ps" bigint CHECK("page_paging_ps" >= 0) NOT NULL DEFAULT '0' ,
+    "network_rx_bandwidth_kbyte" bigint CHECK("network_rx_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "network_rx_pps" bigint CHECK("network_rx_pps" >= 0) NOT NULL DEFAULT '0' ,
+    "network_rx_error_pps" bigint CHECK("network_rx_error_pps" >= 0) NOT NULL DEFAULT '0' ,
+    "network_rx_drop_pps" bigint CHECK("network_rx_drop_pps" >= 0) NOT NULL DEFAULT '0' ,
+    "network_tx_bandwidth_kbyte" bigint CHECK("network_tx_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "network_tx_pps" bigint CHECK("network_tx_pps" >= 0) NOT NULL DEFAULT '0' ,
+    "network_tx_error_pps" bigint CHECK("network_tx_error_pps" >= 0) NOT NULL DEFAULT '0' ,
+    "network_tx_drop_pps" bigint CHECK("network_tx_drop_pps" >= 0) NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "host_stat_host_id" ON "host_stat" ("host_id");
+CREATE INDEX "host_stat_create" ON "host_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.HostFcPort"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "host_fc_port" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "wwn" varchar(128) NOT NULL DEFAULT '' ,
+    "host_id" bigint NOT NULL,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.License"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "license" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "code" text NOT NULL DEFAULT '' ,
+    "product" varchar(255) NOT NULL DEFAULT '' ,
+    "customer" text NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "active" bool NOT NULL DEFAULT '0' ,
+    "capacity" bigint CHECK("capacity" >= 0) NOT NULL DEFAULT '0' ,
+    "host_num" integer NOT NULL DEFAULT '0' ,
+    "osd_num" integer NOT NULL DEFAULT '0' ,
+    "signed_time" timestamp with time zone NOT NULL,
+    "expired_time" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ProtectionDomain"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "protection_domain" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "description" varchar(1024) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ProtectionDomainStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "protection_domain_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "protection_domain_id" bigint NOT NULL,
+    "total_kbyte" bigint CHECK("total_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "used_kbyte" bigint CHECK("used_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "error_kbyte" bigint CHECK("error_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "healthy_percent" double precision NOT NULL DEFAULT '0' ,
+    "recovery_percent" double precision NOT NULL DEFAULT '0' ,
+    "degraded_percent" double precision NOT NULL DEFAULT '0' ,
+    "unavailable_percent" double precision NOT NULL DEFAULT '0' ,
+    "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_iops" bigint CHECK("recovery_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_bandwidth_kbyte" bigint CHECK("recovery_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "host_active_num" bigint CHECK("host_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "host_warning_num" bigint CHECK("host_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "host_error_num" bigint CHECK("host_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_in_num" bigint CHECK("osd_in_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_out_num" bigint CHECK("osd_out_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_active_num" bigint CHECK("osd_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_warning_num" bigint CHECK("osd_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "osd_error_num" bigint CHECK("osd_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_active_num" bigint CHECK("pool_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_degraded_num" bigint CHECK("pool_degraded_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_recovering_num" bigint CHECK("pool_recovering_num" >= 0) NOT NULL DEFAULT '0' ,
+    "pool_error_num" bigint CHECK("pool_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "block_volume_active_num" bigint CHECK("block_volume_active_num" >= 0) NOT NULL DEFAULT '0' ,
+    "block_volume_warning_num" bigint CHECK("block_volume_warning_num" >= 0) NOT NULL DEFAULT '0' ,
+    "block_volume_error_num" bigint CHECK("block_volume_error_num" >= 0) NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "protection_domain_stat_protection_domain_id" ON "protection_domain_stat" (
+    "protection_domain_id");
+CREATE INDEX "protection_domain_stat_create" ON "protection_domain_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Pool"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "pool" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "protection_domain_id" bigint NOT NULL,
+    "pool_id" bigint CHECK("pool_id" >= 0) NOT NULL DEFAULT '0' ,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "pool_name" varchar(128) NOT NULL DEFAULT '' ,
+    "pool_mode" varchar(255) NOT NULL DEFAULT '' ,
+    "device_type" varchar(255) NOT NULL DEFAULT '' ,
+    "pool_type" varchar(255) NOT NULL DEFAULT '' ,
+    "replicate_size" integer NOT NULL DEFAULT '0' ,
+    "data_chunk_num" integer NOT NULL DEFAULT '0' ,
+    "coding_chunk_num" integer NOT NULL DEFAULT '0' ,
+    "property_id" bigint UNIQUE,
+    "qos_id" bigint UNIQUE,
+    "cache_pool_id" bigint UNIQUE,
+    "tier_status" varchar(255) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "action_status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PoolStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "pool_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "pool_id" bigint,
+    "num_read" bigint CHECK("num_read" >= 0) NOT NULL DEFAULT '0' ,
+    "num_read_kbyte" bigint CHECK("num_read_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "num_write" bigint CHECK("num_write" >= 0) NOT NULL DEFAULT '0' ,
+    "num_write_kbyte" bigint CHECK("num_write_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "num_recovery" bigint CHECK("num_recovery" >= 0) NOT NULL DEFAULT '0' ,
+    "num_recovery_kbyte" bigint CHECK("num_recovery_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "healthy_percent" double precision NOT NULL DEFAULT '0' ,
+    "recovery_percent" double precision NOT NULL DEFAULT '0' ,
+    "degraded_percent" double precision NOT NULL DEFAULT '0' ,
+    "unavailable_percent" double precision NOT NULL DEFAULT '0' ,
+    "creating_num" bigint CHECK("creating_num" >= 0) NOT NULL DEFAULT '0' ,
+    "healthy_num" bigint CHECK("healthy_num" >= 0) NOT NULL DEFAULT '0' ,
+    "degraded_num" bigint CHECK("degraded_num" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_num" bigint CHECK("recovery_num" >= 0) NOT NULL DEFAULT '0' ,
+    "unavailable_num" bigint CHECK("unavailable_num" >= 0) NOT NULL DEFAULT '0' ,
+    "total_kbyte" bigint CHECK("total_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "used_kbyte" bigint CHECK("used_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "error_kbyte" bigint CHECK("error_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "data_kbyte" bigint CHECK("data_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_iops" bigint CHECK("recovery_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "recovery_bandwidth_kbyte" bigint CHECK("recovery_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "pool_stat_pool_id" ON "pool_stat" ("pool_id");
+CREATE INDEX "pool_stat_create" ON "pool_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Osd"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "osd" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(255) NOT NULL DEFAULT '' ,
+    "osd_id" bigint CHECK("osd_id" >= 0) NOT NULL DEFAULT '0'  UNIQUE,
+    "uuid" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "data_dir" varchar(255) NOT NULL DEFAULT '' ,
+    "up" bool NOT NULL DEFAULT '0' ,
+    "in" bool NOT NULL DEFAULT '0' ,
+    "pid" bigint CHECK("pid" >= 0) NOT NULL DEFAULT '0' ,
+    "public_ip" varchar(255) NOT NULL DEFAULT '' ,
+    "cluster_ip" varchar(255) NOT NULL DEFAULT '' ,
+    "last_scrub_time" timestamp with time zone,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "action_status" varchar(255) NOT NULL DEFAULT '' ,
+    "pool_id" bigint,
+    "disk_id" bigint UNIQUE,
+    "qos_id" bigint UNIQUE,
+    "partition_id" bigint UNIQUE,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PlacementGroup"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "placement_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "pool_id" bigint NOT NULL,
+    "pg_id" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "status" varchar(255) NOT NULL DEFAULT '',
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PlacementGroupScrub"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "placement_group_scrub" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "placement_group_id" bigint NOT NULL,
+    "scrub_time" timestamp with time zone NOT NULL,
+    "scrub_status" varchar(255) NOT NULL DEFAULT '' ,
+    "repair_time" timestamp with time zone,
+    "repair_status" varchar(255) NOT NULL DEFAULT ''
+);
+CREATE INDEX "placement_group_scrub_placement_group_id" on "placement_group_scrub" ("placement_group_id");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PlacementGroupOsd"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "placement_group_osd" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "placement_group_id" bigint NOT NULL,
+    "osd_id" bigint CHECK("osd_id" >= 0) NOT NULL DEFAULT '0' ,
+    UNIQUE ("placement_group_id", "osd_id")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PoolProperty"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "pool_property" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "hit_set_type" varchar(255) NOT NULL DEFAULT '' ,
+    "hit_set_period" bigint NOT NULL DEFAULT '0' ,
+    "hit_set_count" bigint NOT NULL DEFAULT '0' ,
+    "target_max_bytes" bigint NOT NULL DEFAULT '0' ,
+    "cache_target_dirty_ratio" double precision NOT NULL DEFAULT '0' ,
+    "cache_target_full_ratio" double precision NOT NULL DEFAULT '0' ,
+    "min_read_recency_for_promote" bigint NOT NULL DEFAULT '0'
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Volume"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "volume_name" varchar(128) NOT NULL DEFAULT '' ,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "sn" varchar(32) NOT NULL DEFAULT '' ,
+    "size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0' ,
+    "allocated_size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0' ,
+    "qos_id" bigint UNIQUE,
+    "pool_id" bigint NOT NULL,
+    "mapping_at_id" bigint,
+    "snapshot_id" bigint,
+    "action_status" varchar(255) NOT NULL DEFAULT '',
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    UNIQUE ("id")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Snapshot"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "snapshot" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "snap_name" varchar(128) NOT NULL DEFAULT '' ,
+    "volume_id" bigint NOT NULL,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0' ,
+    "protected" bool NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.VolumeStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "volume_id" bigint NOT NULL,
+    "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "read_io_latency_us" bigint CHECK("read_io_latency_us" >= 0) NOT NULL DEFAULT '0' ,
+    "read_io_wait_us" bigint CHECK("read_io_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "write_io_latency_us" bigint CHECK("write_io_latency_us" >= 0) NOT NULL DEFAULT '0' ,
+    "write_io_wait_us" bigint CHECK("write_io_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "volume_stat_volume_id" on "volume_stat" ("volume_id");
+CREATE INDEX "volume_stat_create" on "volume_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.VolumeQosSpec"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_qos_spec" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "max_total_iops" bigint NOT NULL DEFAULT '0' ,
+    "max_total_bw" bigint NOT NULL DEFAULT '0' ,
+    "burst_total_iops" bigint NOT NULL DEFAULT '0' ,
+    "burst_total_bw" bigint NOT NULL DEFAULT '0'
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.BootNode"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "boot_node" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "fs_id" varchar(255) NOT NULL DEFAULT '' ,
+    "host_id" bigint,
+    "installer_path" varchar(255) NOT NULL DEFAULT '' ,
+    "public_network" varchar(255) NOT NULL DEFAULT '' ,
+    "private_network" varchar(255) NOT NULL DEFAULT '' ,
+    "admin_network" varchar(255) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT ''
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Service"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "service" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(255) NOT NULL DEFAULT '' ,
+    "host_id" bigint NOT NULL,
+    "ip" varchar(255) NOT NULL DEFAULT '' ,
+    "port" bigint NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "enabled" bool NOT NULL DEFAULT '0' ,
+    "type" varchar(255) NOT NULL DEFAULT '' ,
+    "started_time" timestamp with time zone,
+    "update" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    UNIQUE ("host_id", "type")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AccessTarget"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "access_target" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "description" varchar(1024),
+    "protection_domain_id" bigint NOT NULL,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ServerNode"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "server_node" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "board" integer NOT NULL DEFAULT '0' ,
+    "port" integer NOT NULL DEFAULT '0' ,
+    "iqn" varchar(256) NOT NULL DEFAULT '' ,
+    "at_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.VolumeMapping"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_mapping" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "at_id" bigint,
+    "server_id" bigint NOT NULL,
+    "volume_id" bigint NOT NULL,
+    "lun" integer NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Client"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "iqn" varchar(256) NOT NULL DEFAULT '' ,
+    "description" varchar(1024),
+    "chap" bool NOT NULL DEFAULT 'false' ,
+    "iname" varchar(256),
+    "isecret" varchar(32),
+    "tsecret" varchar(32),
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientMapping"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_mapping" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "client_id" bigint NOT NULL,
+    "server_id" bigint NOT NULL,
+    "at_id" bigint,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientFcPort"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_fc_port" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "wwn" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "client_id" bigint NOT NULL,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientACL"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_acl" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "at_id" bigint NOT NULL,
+    "client_id" bigint NOT NULL,
+    "volume_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientACLMapping"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_acl_mapping" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "client_acl_id" bigint NOT NULL,
+    "server_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientIqn"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_iqn" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "iqn" varchar(256) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Task"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "task" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "type" varchar(255) NOT NULL DEFAULT '' ,
+    "data" text,
+    "ret_data" text,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "error_msg" text,
+    "retry" bigint NOT NULL DEFAULT '0' ,
+    "host_id" bigint NOT NULL,
+    "scheduled" bool NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    "execute" timestamp with time zone,
+    "finish" timestamp with time zone
+);
+
+CREATE INDEX "task_type_status_retry_idx" ON "task" ("type", "status", "retry");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.User"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "user" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "email" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "password" varchar(255) NOT NULL DEFAULT '' ,
+    "enabled" bool NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Token"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "token" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "user_id" bigint NOT NULL,
+    "uuid" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "valid" bool NOT NULL DEFAULT '0' ,
+    "expires" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AccessTargetClients"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "access_target_clients" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "access_target_id" bigint NOT NULL,
+    "client_id" bigint NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientVolumes"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_volumes" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "client_id" bigint NOT NULL,
+    "volume_id" bigint NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorage"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageGateway"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_gateway" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "gateway_name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "port" bigint CHECK("port" >= 0) NOT NULL DEFAULT '0' ,
+    "pid" bigint NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageGatewayStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_gateway_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "gateway_id" bigint NOT NULL,
+    "num_up" bigint CHECK("num_up" >= 0) NOT NULL DEFAULT '0',
+    "num_up_byte" bigint CHECK("num_up_byte" >= 0) NOT NULL DEFAULT '0',
+    "num_down" bigint CHECK("num_down" >= 0) NOT NULL DEFAULT '0',
+    "num_down_byte" bigint CHECK("num_down_byte" >= 0) NOT NULL DEFAULT '0',
+    "up_iops" bigint CHECK("up_iops" >= 0) NOT NULL DEFAULT '0',
+    "up_bandwidth_kbyte" bigint CHECK("up_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "down_iops" bigint CHECK("down_iops" >= 0) NOT NULL DEFAULT '0',
+    "down_bandwidth_kbyte" bigint CHECK("down_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "requests" bigint CHECK("requests" >= 0) NOT NULL DEFAULT '0',
+    "merge_speed" bigint CHECK("merge_speed" >= 0) NOT NULL DEFAULT '0',
+    "cpu_util" double precision NOT NULL DEFAULT '0',
+    "mem_usage_percent" double precision NOT NULL DEFAULT '0',
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "object_storage_gateway_stat_gateway_id" ON "object_storage_gateway_stat" ("gateway_id");
+CREATE INDEX "object_storage_gateway_stat_create" ON "object_storage_gateway_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageUser"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_user" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "user_id" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "display_name" varchar(128) NOT NULL DEFAULT '' ,
+    "email" varchar(256) NOT NULL DEFAULT '' ,
+    "suspended" bool NOT NULL DEFAULT '0' ,
+    "parent_id" bigint,
+    "max_buckets" bigint NOT NULL DEFAULT '0' ,
+    "op_mask" varchar(128) NOT NULL DEFAULT '' ,
+    "bucket_quota_max_size" bigint NOT NULL DEFAULT '0' ,
+    "bucket_quota_max_objects" bigint NOT NULL DEFAULT '0' ,
+    "user_quota_max_size" bigint NOT NULL DEFAULT '0' ,
+    "user_quota_max_objects" bigint NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageUserStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_user_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "user_id" bigint NOT NULL,
+    "allocated_size" bigint NOT NULL DEFAULT '0',
+    "allocated_objects" bigint NOT NULL DEFAULT '0',
+    "total_rx_bytes" bigint CHECK("total_rx_bytes" >= 0) NOT NULL DEFAULT '0',
+    "total_tx_bytes" bigint CHECK("total_tx_bytes" >= 0) NOT NULL DEFAULT '0',
+    "total_rx_ops" bigint CHECK("total_rx_ops" >= 0) NOT NULL DEFAULT '0',
+    "total_tx_ops" bigint CHECK("total_tx_ops" >= 0) NOT NULL DEFAULT '0',
+    "total_rx_success_ops" bigint CHECK("total_rx_success_ops" >= 0) NOT NULL DEFAULT '0',
+    "total_tx_success_ops" bigint CHECK("total_tx_success_ops" >= 0) NOT NULL DEFAULT '0',
+    "rx_bandwidth_kbyte" bigint CHECK("rx_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "tx_bandwidth_kbyte" bigint CHECK("tx_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "rx_ops_pm" bigint NOT NULL CHECK("rx_ops_pm" >= 0) DEFAULT '0',
+    "tx_ops_pm" bigint NOT NULL CHECK("tx_ops_pm" >= 0) DEFAULT '0',
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "object_storage_user_stat_user_id" on "object_storage_user_stat" ("user_id");
+CREATE INDEX "object_storage_user_stat_create" on "object_storage_user_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageKey"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_key" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "user_id" bigint NOT NULL,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "access_key" varchar(512) NOT NULL DEFAULT '' ,
+    "secret_key" varchar(512) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStoragePolicy"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_policy" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "policy_name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "description" varchar(2048) NOT NULL DEFAULT '',
+    "index_pool_id" bigint NOT NULL,
+    "data_small_pool_id" bigint NOT NULL,
+    "data_small_pool_ids" varchar(1024) NOT NULL DEFAULT '',
+    "data_big_pool_id" bigint NOT NULL,
+    "data_big_pool_ids" varchar(1024) NOT NULL DEFAULT '',
+    "object_size_threshold" bigint CHECK("object_size_threshold" >= 0) NOT NULL DEFAULT '0',
+    "compress" bool NOT NULL DEFAULT '0',
+    "archive" bool NOT NULL DEFAULT '0',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageBucket"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_bucket" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(256) NOT NULL DEFAULT '' UNIQUE,
+    "owner_id" bigint NOT NULL,
+    "policy_id" bigint NOT NULL,
+    "shards" bigint CHECK("shards" >= 0) NOT NULL DEFAULT '0',
+    "quota_max_size" bigint NOT NULL DEFAULT '0',
+    "quota_max_objects" bigint NOT NULL DEFAULT '0',
+    "owner_permission" varchar(128) NOT NULL DEFAULT '',
+    "auth_user_permission" varchar(128) NOT NULL DEFAULT '',
+    "all_user_permission" varchar(128) NOT NULL DEFAULT '',
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageBucketStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_bucket_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "bucket_id" bigint NOT NULL,
+    "allocated_size" bigint NOT NULL DEFAULT '0',
+    "allocated_objects" bigint NOT NULL DEFAULT '0',
+    "total_rx_bytes" bigint CHECK("total_rx_bytes" >= 0) NOT NULL DEFAULT '0',
+    "total_tx_bytes" bigint CHECK("total_tx_bytes" >= 0) NOT NULL DEFAULT '0',
+    "total_rx_ops" bigint CHECK("total_rx_ops" >= 0) NOT NULL DEFAULT '0',
+    "total_tx_ops" bigint CHECK("total_tx_ops" >= 0) NOT NULL DEFAULT '0',
+    "total_rx_success_ops" bigint CHECK("total_rx_success_ops" >= 0) NOT NULL DEFAULT '0',
+    "total_tx_success_ops" bigint CHECK("total_tx_success_ops" >= 0) NOT NULL DEFAULT '0',
+    "rx_bandwidth_kbyte" bigint CHECK("rx_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "tx_bandwidth_kbyte" bigint CHECK("tx_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "rx_ops_pm" bigint NOT NULL CHECK("rx_ops_pm" >= 0) DEFAULT '0',
+    "tx_ops_pm" bigint NOT NULL CHECK("tx_ops_pm" >= 0) DEFAULT '0',
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "object_storage_bucket_stat_bucket_id" on "object_storage_bucket_stat" ("bucket_id");
+CREATE INDEX "object_storage_bucket_stat_create" on "object_storage_bucket_stat" ("create");
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageArchivePool"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_archive_pool" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "pool_id" bigint NOT NULL,
+    "active" bool NOT NULL DEFAULT '0',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Partition"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "partition" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "uuid" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+    "size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0' ,
+    "path" varchar(255) NOT NULL DEFAULT '' ,
+    "disk_id" bigint NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AlertGroup"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "alert_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(255) NOT NULL DEFAULT '' ,
+    "update" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL
+);
+
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AlertGroupMap"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "alert_group_map" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "alert_group_id" bigint NOT NULL,
+    "email_group_id" bigint NOT NULL,
+    "alert_rule_id" bigint NOT NULL,
+    UNIQUE ("alert_group_id", "email_group_id", "alert_rule_id")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.EmailGroup"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "email_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(255) NOT NULL DEFAULT '' ,
+    "emails" text NOT NULL DEFAULT '' ,
+    "update" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.SmartAttr"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "smart_attr" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "disk_id" bigint NOT NULL,
+    "attr_id" bigint NOT NULL DEFAULT '0' ,
+    "name" varchar(256) NOT NULL DEFAULT '' ,
+    "flag" varchar(256) NOT NULL DEFAULT '' ,
+    "value" varchar(256) NOT NULL DEFAULT '' ,
+    "worst" varchar(256) NOT NULL DEFAULT '' ,
+    "thresh" varchar(256) NOT NULL DEFAULT '' ,
+    "type" varchar(256) NOT NULL DEFAULT '' ,
+    "when_failed" varchar(256) NOT NULL DEFAULT '' ,
+    "raw_value" varchar(256) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL
+);
+
+
+2018/11/20 00:10:52 [I] [migration.go:110] end upgrade: Init_20160523_175322
+2018/11/20 00:10:52 [I] [migration.go:110] start upgrade V230_20161231_163034
+2018/11/20 00:10:52 [I] [migration.go:159] exec sql: 
+DROP TABLE IF EXISTS "access_target";
+DROP TABLE IF EXISTS "server_node";
+DROP TABLE IF EXISTS "volume_mapping";
+DROP TABLE IF EXISTS "client";
+DROP TABLE IF EXISTS "client_mapping";
+DROP TABLE IF EXISTS "client_fc_port";
+DROP TABLE IF EXISTS "client_acl";
+DROP TABLE IF EXISTS "client_acl_mapping";
+DROP TABLE IF EXISTS "client_iqn";
+DROP TABLE IF EXISTS "access_target_clients";
+DROP TABLE IF EXISTS "client_volumes";
+
+2018/11/20 00:10:52 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AccessTarget"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "access_target" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "description" varchar(1024),
+    "protection_domain_id" bigint NOT NULL,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "chap" bool NOT NULL DEFAULT 'false' ,
+    "tname" varchar(256),
+    "tsecret" varchar(32),
+    "action_status" varchar(255) NOT NULL DEFAULT '' ,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Target"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "target" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "board" integer NOT NULL DEFAULT '0' ,
+    "port" integer NOT NULL DEFAULT '0' ,
+    "iqn" varchar(256) NOT NULL DEFAULT '' ,
+    "access_target_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.MappingGroup"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "mapping_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "access_target_id" bigint NOT NULL,
+    "client_group_id" bigint,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Lun"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "lun" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "access_target_id" bigint,
+    "volume_id" bigint NOT NULL,
+    "lun_id" integer NOT NULL DEFAULT '0' ,
+    "create" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientLunMapping"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_lun_mapping" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "client_id" bigint,
+    "lun_id" bigint NOT NULL,
+    "target_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.MappingGroupVolumes"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "mapping_group_volumes" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "mapping_group_id" bigint NOT NULL,
+    "volume_id" bigint NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientGroup"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "description" varchar(1024),
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.Client"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "code" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+    "client_group_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT 'none' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ClientCode"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "client_code" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "type" varchar(32) NOT NULL DEFAULT '' ,
+    "code" varchar(256) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL
+);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+DO $$
+    BEGIN
+        ALTER TABLE volume RENAME COLUMN mapping_at_id TO access_target_id;
+    EXCEPTION
+        WHEN undefined_column THEN RAISE NOTICE 'column "mapping_at_id" does not exist';
+    END;
+$$;
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE host ADD COLUMN gateway_ips varchar(128) NOT NULL DEFAULT '';
+UPDATE host SET gateway_ips = public_ips;
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE boot_node ADD COLUMN gateway_network varchar(255) NOT NULL DEFAULT '';
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PlacementNode"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "placement_node" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "protection_domain_id" bigint,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "type" varchar(128) NOT NULL DEFAULT '',
+    "parent_id" bigint,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE protection_domain ADD COLUMN placement_node_id bigint;
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE host ADD COLUMN placement_node_id bigint;
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.PoolPlacementNode"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "pool_placement_node" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "pool_id" bigint,
+    "placement_node_id" bigint,
+    "parent_id" bigint,
+    "replicate_num" integer NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE pool ADD COLUMN pool_placement_node_id bigint;
+ALTER TABLE pool ADD COLUMN failure_domain_type varchar(255) NOT NULL DEFAULT '';
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE object_storage_user ADD COLUMN status varchar(255) NOT NULL DEFAULT '';
+UPDATE object_storage_user SET status = 'active';
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: ALTER TABLE disk_stat DROP COLUMN uptime,
+	DROP COLUMN read_ios,
+	DROP COLUMN read_merged,
+	DROP COLUMN read_sectors,
+	DROP COLUMN read_ticks,
+	DROP COLUMN write_ios,
+	DROP COLUMN write_merged,
+	DROP COLUMN write_sectors,
+	DROP COLUMN write_ticks,
+	DROP COLUMN io_ticks,
+	DROP COLUMN weighted_io_ticks;
+	
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "disk_prediction" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"disk_id" bigint NOT NULL,
+		"used_kbyte_1day" bigint CHECK("used_kbyte_1day" >= 0) NOT NULL DEFAULT '0',
+		"used_kbyte_7days" bigint CHECK("used_kbyte_7days" >= 0) NOT NULL DEFAULT '0',
+		"used_kbyte_30days" bigint CHECK("used_kbyte_30days" >= 0) NOT NULL DEFAULT '0',
+		"create" timestamp with time zone NOT NULL
+	);
+	CREATE INDEX "disk_prediction_disk_id" ON "disk_prediction" ("disk_id");
+	CREATE INDEX "disk_prediction_create" ON "disk_prediction" ("create");
+	
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+-- ---------------------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageLifecycle"
+-- ---------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_lifecycle" (
+	"id" serial NOT NULL PRIMARY KEY,
+	"rules" text,
+	"status" varchar(255) NOT NULL DEFAULT ''
+);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE object_storage_bucket ADD COLUMN lifecycle_id bigint;
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: ALTER TABLE osd ADD COLUMN objectstore varchar(16) NOT NULL DEFAULT '';
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "pool_prediction" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"pool_id" bigint NOT NULL,
+		"used_kbyte_1day" bigint CHECK("used_kbyte_1day" >= 0) NOT NULL DEFAULT '0',
+		"used_kbyte_7days" bigint CHECK("used_kbyte_7days" >= 0) NOT NULL DEFAULT '0',
+		"used_kbyte_30days" bigint CHECK("used_kbyte_30days" >= 0) NOT NULL DEFAULT '0',
+		"data_kbyte_1day" bigint CHECK("data_kbyte_1day" >= 0) NOT NULL DEFAULT '0',
+		"data_kbyte_7days" bigint CHECK("data_kbyte_7days" >= 0) NOT NULL DEFAULT '0',
+		"data_kbyte_30days" bigint CHECK("data_kbyte_30days" >= 0) NOT NULL DEFAULT '0',
+		"create" timestamp with time zone NOT NULL
+	);
+	CREATE INDEX "pool_prediction_pool_id" ON "pool_prediction" ("pool_id");
+	CREATE INDEX "pool_prediction_create" ON "pool_prediction" ("create");
+	
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE host ADD COLUMN roles varchar(255) NOT NULL DEFAULT '';
+UPDATE host SET roles = 'storage_client,storage_server';
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.NFSGateway"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "nfs_gateway" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "port" bigint CHECK("port" >= 0) NOT NULL DEFAULT '0' ,
+    "pid" bigint NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    UNIQUE ("host_id", "port")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.NFSGatewayBucketMap"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "nfs_gateway_bucket_map" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "nfs_gateway_id" bigint NOT NULL,
+    "bucket_id" bigint NOT NULL UNIQUE,
+    "key_id" bigint NOT NULL,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    UNIQUE ("nfs_gateway_id", "bucket_id")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.ObjectStorageBucketNFSClient"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "object_storage_bucket_nfs_client" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "bucket_id" bigint NOT NULL,
+    "client" varchar(128) NOT NULL DEFAULT '' ,
+    "permission" varchar(128) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    UNIQUE ("bucket_id", "client")
+);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE osd ADD COLUMN "meta_bytes" bigint CHECK("meta_bytes" >= 0) NOT NULL DEFAULT '0';
+UPDATE osd SET meta_bytes = 102400 where meta_bytes = '0' AND partition_id > '0';
+UPDATE osd SET meta_bytes = 5242880 where meta_bytes = '0' AND partition_id = null;
+ALTER TABLE pool_stat ADD COLUMN "actual_kbyte" bigint CHECK("actual_kbyte" >= 0) NOT NULL DEFAULT '0';
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: ALTER TABLE object_storage_policy ADD COLUMN crypto bool NOT NULL DEFAULT '0';
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: ALTER TABLE object_storage_policy DROP COLUMN archive;
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.VolumeBackupRule"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_backup_rule" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "volume_id" bigint NOT NULL,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "cron_expr" varchar(1024) NOT NULL DEFAULT '' ,
+    "path" varchar(1024) NOT NULL DEFAULT '' ,
+    "status" text NOT NULL DEFAULT '' ,
+    "reserved_snap_id" bigint,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    UNIQUE ("volume_id", "path")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.VolumeBackup"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_backup" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "backup_rule_id" bigint NOT NULL,
+    "name" varchar(128) NOT NULL DEFAULT '' ,
+    "type" text NOT NULL DEFAULT '' ,
+    "size" bigint CHECK("size" >= 0) NOT NULL DEFAULT 0 ,
+    "snap_name" varchar(128) NOT NULL DEFAULT '' ,
+    "status" text NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    UNIQUE ("backup_rule_id", "name")
+);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ ALTER TABLE snapshot ADD COLUMN reserved bool NOT NULL DEFAULT '0';
+ 
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "host_in_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "host_out_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "host_active_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "host_warning_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "host_error_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "osd_in_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "osd_out_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "osd_active_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "osd_warning_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "osd_error_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pd_active_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pd_warning_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pd_error_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pool_active_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pool_degraded_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pool_recovering_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "pool_error_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "block_volume_active_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "block_volume_warning_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "block_volume_error_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "client_active_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "client_warning_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "client_error_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "object_storage_user_num";
+ALTER TABLE cluster_stat DROP COLUMN IF EXISTS "object_storage_bucket_num";
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+	-- --------------------------------------------------
+	--  Table Structure for "xsky-demon/models.SystemLog"
+	-- --------------------------------------------------
+	CREATE TABLE IF NOT EXISTS "system_log" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"saved_host_id" bigint NOT NULL,
+		"host_id" bigint NOT NULL,
+		"catalog" varchar(255) NOT NULL DEFAULT '',
+		"name" varchar(255) NOT NULL DEFAULT '',
+		"size" bigint NOT NULL DEFAULT '0',
+		"last_updated_time" timestamp with time zone NOT NULL
+	);
+
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: ALTER TABLE osd DROP COLUMN qos_id;
+2018/11/20 00:10:53 [I] [migration.go:159] exec sql: 
+DROP TABLE "alert_group_map"; 
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AlertGroupEmailGroupMap"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "alert_group_email_group_map" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "alert_group_id" bigint NOT NULL,
+    "email_group_id" bigint NOT NULL,
+    UNIQUE ("alert_group_id", "email_group_id")
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.AlertGroupAlertRuleMap"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "alert_group_alert_rule_map" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "alert_group_id" bigint NOT NULL,
+    "alert_rule_id" bigint NOT NULL,
+    UNIQUE ("alert_group_id", "alert_rule_id")
+);
+
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+ALTER TABLE nfs_gateway ADD COLUMN gateway_ip varchar(128) NOT NULL DEFAULT '';
+
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+ALTER TABLE object_storage_gateway ADD COLUMN gateway_ip varchar(128) NOT NULL DEFAULT '';
+
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for 'xsky-demon/models.ProgressInfo'
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "progress_info" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "resource" text NOT NULL DEFAULT '' ,
+    "resource_id" bigint NOT NULL DEFAULT 0 ,
+    "action" text NOT NULL DEFAULT '' ,
+    "data" text,
+    "total_num" bigint NOT NULL DEFAULT 0 ,
+    "fail_num" bigint NOT NULL DEFAULT 0 ,
+    "success_num" bigint NOT NULL DEFAULT 0 ,
+    "current_progress" double precision NOT NULL DEFAULT 0 ,
+    "update" timestamp with time zone NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    UNIQUE ("resource", "resource_id", "action")
+);;
+
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+ALTER TABLE "cluster_stat" ADD COLUMN "os_up_iops" bigint CHECK("os_up_iops" >= 0) NOT NULL DEFAULT '0';
+ALTER TABLE "cluster_stat" ADD COLUMN "os_up_bandwidth_kbyte" bigint CHECK("os_up_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0';
+ALTER TABLE "cluster_stat" ADD COLUMN "os_down_iops" bigint CHECK("os_down_iops" >= 0) NOT NULL DEFAULT '0';
+ALTER TABLE "cluster_stat" ADD COLUMN "os_down_bandwidth_kbyte" bigint CHECK("os_down_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0';
+ALTER TABLE "cluster_stat" ADD COLUMN "os_merge_speed" bigint CHECK("os_merge_speed" >= 0) NOT NULL DEFAULT '0';
+
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "search_operation" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"type" varchar(128) NOT NULL DEFAULT '',
+		"resource_type" varchar(128) NOT NULL DEFAULT '',
+		"resource_id" bigint NOT NULL,
+		"create" timestamp with time zone NOT NULL
+	);
+	
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+ALTER TABLE nfs_gateway_bucket_map ADD COLUMN mount_num bigint CHECK("mount_num" >= 0) NOT NULL DEFAULT '0';
+
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+		ALTER TABLE disk_stat RENAME COLUMN "io_wait_us" to "total_io_wait_us";
+		ALTER TABLE disk_stat ADD COLUMN "total_iops" bigint CHECK("total_iops" >= 0) NOT NULL DEFAULT '0';
+		ALTER TABLE disk_stat ADD COLUMN "total_bandwidth_kbyte" bigint CHECK("total_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0';
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+		ALTER TABLE volume_stat ADD COLUMN "total_iops" bigint CHECK("total_iops" >= 0) NOT NULL DEFAULT '0';
+		ALTER TABLE volume_stat ADD COLUMN "total_bandwidth_kbyte" bigint CHECK("total_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0';
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+		ALTER TABLE pool_stat ADD COLUMN "total_iops" bigint CHECK("total_iops" >= 0) NOT NULL DEFAULT '0';
+		ALTER TABLE pool_stat ADD COLUMN "total_bandwidth_kbyte" bigint CHECK("total_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0';
+2018/11/20 00:10:54 [I] [migration.go:110] end upgrade: V230_20161231_163034
+2018/11/20 00:10:54 [I] [migration.go:110] start upgrade V231_20170111_164631
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+	ALTER TABLE object_storage_key ADD COLUMN status varchar(255) NOT NULL DEFAULT '';
+	UPDATE object_storage_key SET status = 'active';
+	
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: ALTER TABLE nfs_gateway ADD COLUMN "gateway_name" varchar(128) NOT NULL DEFAULT '' UNIQUE;
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: ALTER TABLE osd ADD COLUMN "read_cache_size" bigint NOT NULL DEFAULT '0';
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: ALTER TABLE task ADD COLUMN heartbeat timestamp with time zone;
+2018/11/20 00:10:54 [I] [migration.go:110] end upgrade: V231_20170111_164631
+2018/11/20 00:10:54 [I] [migration.go:110] start upgrade V232_20170120_151826
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE access_target RENAME TO access_path;
+        ALTER TABLE volume RENAME access_target_id TO access_path_id;
+        ALTER TABLE target RENAME access_target_id TO access_path_id;
+        ALTER TABLE mapping_group RENAME access_target_id TO access_path_id;
+        ALTER TABLE lun RENAME access_target_id TO access_path_id;
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE host_stat ADD COLUMN "network_error_pps" bigint CHECK("network_error_pps" >= 0) NOT NULL DEFAULT '0';
+        ALTER TABLE host_stat ADD COLUMN "network_drop_pps" bigint CHECK("network_drop_pps" >= 0) NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE volume ADD COLUMN "flattened" bool NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:54 [I] [migration.go:110] end upgrade: V232_20170120_151826
+2018/11/20 00:10:54 [I] [migration.go:110] start upgrade V235_20170307_155552
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE nfs_gateway ADD COLUMN mount_num bigint CHECK("mount_num" >= 0) NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE volume drop COLUMN IF EXISTS "flattened";
+        ALTER TABLE volume ADD COLUMN "flattened" bool NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        UPDATE volume SET flattened=true WHERE snapshot_id IS NULL;
+        UPDATE volume SET flattened=false WHERE snapshot_id IS NOT NULL;
+    
+2018/11/20 00:10:54 [I] [migration.go:110] end upgrade: V235_20170307_155552
+2018/11/20 00:10:54 [I] [migration.go:110] start upgrade SnPadZero_20170331_151826
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: UPDATE volume SET "sn"=LPAD("sn", 16, '0');
+2018/11/20 00:10:54 [I] [migration.go:110] end upgrade: SnPadZero_20170331_151826
+2018/11/20 00:10:54 [I] [migration.go:110] start upgrade V300_20170412_181234
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE volume ADD COLUMN "passive" bool NOT NULL DEFAULT '0';
+        UPDATE volume SET "passive" = '1' from pool where volume.pool_id=pool.id and pool.pool_mode='passive';
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE snapshot ADD COLUMN "passive" bool NOT NULL DEFAULT '0';
+        UPDATE snapshot SET "passive" = '1' from volume where snapshot.volume_id=volume.id and volume.passive='1';
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE pool ADD COLUMN "pool_role" varchar(255) NOT NULL DEFAULT '';
+        UPDATE pool SET pool_role = 'block' from license where license.product = 'XEBS';
+        UPDATE pool SET pool_role = 'cloud' from license where license.product = 'XCBS';
+        UPDATE pool SET pool_role = 'object' from license where license.product = 'XEOS';
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        CREATE TABLE IF NOT EXISTS "nfs_gateway_stat" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "gateway_id" bigint NOT NULL,
+            "latency_up" bigint CHECK("latency_up" >= 0) NOT NULL DEFAULT '0',
+            "latency_down" bigint CHECK("latency_down" >= 0) NOT NULL DEFAULT '0',
+            "num_up" bigint CHECK("num_up" >= 0) NOT NULL DEFAULT '0',
+            "num_up_byte" bigint CHECK("num_up_byte" >= 0) NOT NULL DEFAULT '0',
+            "num_down" bigint CHECK("num_down" >= 0) NOT NULL DEFAULT '0',
+            "num_down_byte" bigint CHECK("num_down_byte" >= 0) NOT NULL DEFAULT '0',
+            "down_ops" bigint CHECK("down_ops" >= 0) NOT NULL DEFAULT '0',
+            "up_ops" bigint CHECK("up_ops" >= 0) NOT NULL DEFAULT '0',
+            "down_bandwidth_kbyte" bigint CHECK("down_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+            "up_bandwidth_kbyte" bigint CHECK("up_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+            "down_latency" bigint CHECK("down_latency" >=0) NOT NULL DEFAULT '0',
+            "up_latency" bigint CHECK("up_latency" >=0) NOT NULL DEFAULT '0',
+            "cpu_util" double precision NOT NULL DEFAULT '0',
+            "mem_usage_percent" double precision NOT NULL DEFAULT '0',
+            "create" timestamp with time zone NOT NULL
+        );
+        CREATE INDEX "nfs_gateway_stat_gateway_id" ON "nfs_gateway_stat" ("gateway_id");
+        CREATE INDEX "nfs_gateway_stat_create" ON "nfs_gateway_stat" ("create");
+    
+2018/11/20 00:10:54 [I] [migration.go:159] exec sql: 
+        ALTER TABLE client_group ADD COLUMN "chap" bool NOT NULL DEFAULT 'false';
+        ALTER TABLE client_group ADD COLUMN "iname" varchar(256);
+        ALTER TABLE client_group ADD COLUMN "isecret" varchar(32);
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+    CREATE TABLE IF NOT EXISTS "pool_property_item" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "pool_id" bigint NOT NULL,
+        "key" varchar(128) NOT NULL DEFAULT '',
+        "value" varchar(256) NOT NULL DEFAULT '',
+        UNIQUE("key", "pool_id")
+    );
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE pool ADD COLUMN "primary_placement_node_id" bigint;
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE cluster ADD COLUMN "down_out_interval" bigint NOT NULL DEFAULT 10800;
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.SnmpGateway"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "snmp_gateway" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "ip" varchar(255) NOT NULL DEFAULT '' ,
+    "port" integer NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.TrapReceiver"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "trap_receiver" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "ip" varchar(255) NOT NULL DEFAULT '' ,
+    "port" integer NOT NULL DEFAULT '0' ,
+    "msg_level" varchar(255) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+ALTER TABLE cluster ADD COLUMN "snmp_enabled" bool NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE host ADD COLUMN action_status varchar(255) NOT NULL DEFAULT '';
+        ALTER TABLE host ADD COLUMN type varchar(255) NOT NULL DEFAULT '';
+        UPDATE host SET type='storage_server' where roles LIKE '%storage_server%';
+        UPDATE host SET type='storage_client' where roles NOT LIKE '%storage_server%';
+
+        UPDATE host SET action_status='active';
+        UPDATE host SET roles='';
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE service ADD COLUMN heartbeat timestamp with time zone;
+        DELETE from service where type='XMS-a';
+        DELETE from service where type='XMS-s';
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE object_storage_gateway_stat RENAME up_iops TO up_ops;
+        ALTER TABLE object_storage_gateway_stat RENAME down_iops TO down_ops;
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+CREATE TABLE IF NOT EXISTS "protection_site" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "protection_type" varchar(255) NOT NULL DEFAULT '',
+    "type" varchar(255) NOT NULL DEFAULT '',
+    "address" text NOT NULL DEFAULT '',
+    "config" text NOT NULL DEFAULT '',
+    "status" varchar(255) NOT NULL DEFAULT '',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "protection_gateway" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "host_id" bigint NOT NULL,
+    "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "port" bigint NOT NULL DEFAULT '0' ,
+    "pid" bigint NOT NULL DEFAULT '0' ,
+    "status" varchar(255) NOT NULL DEFAULT '',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "protection_policy" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "protection_type" varchar(255) NOT NULL DEFAULT '',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "protection_plan" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "protection_policy_id" bigint NOT NULL,
+    "protection_site_id" bigint NOT NULL,
+    "protection_gateway_id" bigint NOT NULL,
+    "cron_expr" varchar(1024) NOT NULL DEFAULT '',
+    "backup_retained_days" bigint NOT NULL DEFAULT '0',
+    "full_backup_interval_times" bigint NOT NULL DEFAULT '0',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    UNIQUE ("protection_policy_id", "protection_site_id")
+);
+
+CREATE TABLE IF NOT EXISTS "protection_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "resource_type" varchar(255) NOT NULL DEFAULT '',
+    "enabled" bool NOT NULL DEFAULT '0',
+    "status" varchar(255) NOT NULL DEFAULT '',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "protection_group_policy_mapping" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "protection_group_id" bigint NOT NULL,
+    "protection_policy_id" bigint NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    UNIQUE ("protection_group_id", "protection_policy_id")
+);
+
+CREATE TABLE IF NOT EXISTS "protection_group_volume_mapping" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "protection_group_id" bigint NOT NULL,
+    "volume_id" bigint NOT NULL,
+    "replicate_name" varchar(255) DEFAULT '',
+    "create" timestamp with time zone NOT NULL,
+    UNIQUE ("protection_group_id", "volume_id")
+);
+
+CREATE TABLE IF NOT EXISTS "protection_job" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "protection_type" varchar(255) NOT NULL DEFAULT '',
+    "protection_group_id" bigint NOT NULL,
+    "protection_plan_id" bigint NOT NULL,
+    "volume_id" bigint,
+    "bucket_id" bigint,
+    "backup_size" bigint NOT NULL DEFAULT '0',
+    "status" varchar(255) NOT NULL DEFAULT '',
+    "started_at" timestamp with time zone,
+    "finished_at" timestamp with time zone
+);
+CREATE INDEX "protection_job_protection_type" on "protection_job" ("protection_type");
+CREATE INDEX "protection_job_protection_group_id" on "protection_job" ("protection_group_id");
+CREATE INDEX "protection_job_protection_plan_id" on "protection_job" ("protection_plan_id");
+CREATE INDEX "protection_job_volume_id" on "protection_job" ("volume_id");
+CREATE INDEX "protection_job_bucket_id" on "protection_job" ("bucket_id");
+
+CREATE TABLE IF NOT EXISTS "protection_recovery_job" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+    "resource_type" varchar(255) NOT NULL DEFAULT '',
+    "protection_site_id" bigint NOT NULL,
+    "protection_gateway_id" bigint NOT NULL,
+    "volume_id" bigint NOT NULL,
+    "data" text DEFAULT '',
+    "status" varchar(255) NOT NULL DEFAULT '',
+    "started_at" timestamp with time zone,
+    "finished_at" timestamp with time zone,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "latency_up" bigint CHECK("latency_up" >= 0) NOT NULL DEFAULT 0;
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "latency_down" bigint CHECK("latency_down" >= 0) NOT NULL DEFAULT 0;
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "num_up" bigint CHECK("num_up" >= 0) NOT NULL DEFAULT 0;
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "num_down" bigint CHECK("num_down" >= 0) NOT NULL DEFAULT 0;
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "up_latency" bigint CHECK("up_latency" >= 0) NOT NULL DEFAULT 0;
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "down_latency" bigint CHECK("down_latency" >= 0) NOT NULL DEFAULT 0;
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE object_storage_policy ADD COLUMN "default" bool NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+            CREATE TABLE IF NOT EXISTS "partition_stat" (
+                "id" serial NOT NULL PRIMARY KEY,
+                "partition_id" bigint NOT NULL,
+                "uptime" bigint CHECK("uptime" >= 0) NOT NULL DEFAULT 0,
+                "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT 0,
+                "read_merged_ps" bigint CHECK("read_merged_ps" >= 0) NOT NULL DEFAULT 0,
+                "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT 0,
+                "read_io_wait_us" bigint CHECK("read_io_wait_us" >= 0) NOT NULL DEFAULT 0,
+                "total_iops" bigint CHECK("total_iops" >= 0) NOT NULL DEFAULT 0,
+                "total_bandwidth_kbyte" bigint CHECK("total_bandwidth_kbyte" >= 0) NOT NULL DEFAULT 0,
+                "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT 0,
+                "write_merged_ps" bigint CHECK("write_merged_ps" >= 0) NOT NULL DEFAULT 0,
+                "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT 0,
+                "total_io_wait_us" bigint CHECK("total_io_wait_us" >= 0) NOT NULL DEFAULT 0,
+                "write_io_wait_us" bigint CHECK("write_io_wait_us" >= 0) NOT NULL DEFAULT 0,
+                "kbyte_per_io" bigint CHECK("kbyte_per_io" >= 0) NOT NULL DEFAULT 0,
+                "io_wait_us" bigint CHECK("io_wait_us" >= 0) NOT NULL DEFAULT 0,
+                "avg_queue_len" bigint CHECK("avg_queue_len" >= 0) NOT NULL DEFAULT 0,
+                "io_util" double precision NOT NULL DEFAULT 0,
+                "create" timestamp with time zone NOT NULL
+            );
+            CREATE INDEX "partition_stat_partition_id" ON "partition_stat" ("partition_id");
+            CREATE INDEX "partition_stat_create" ON "partition_stat" ("create");
+    
+2018/11/20 00:10:55 [I] [migration.go:110] end upgrade: V300_20170412_181234
+2018/11/20 00:10:55 [I] [migration.go:110] start upgrade V310_20170525_193835
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.S3LoadBalancerGroup"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "s3_load_balancer_group" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+        "description" varchar(2048) NOT NULL DEFAULT '',
+        "port" bigint NOT NULL DEFAULT '0',
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "action_status" varchar(255) NOT NULL DEFAULT '',
+        "update" timestamp with time zone NOT NULL,
+        "create" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.S3LoadBalancer"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "s3_load_balancer" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "group_id" bigint NOT NULL,
+        "host_id" bigint NOT NULL,
+        "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+        "description" varchar(2048) NOT NULL DEFAULT '',
+        "ip" varchar(128) NOT NULL DEFAULT '',
+        "vip" varchar(128) NOT NULL DEFAULT '',
+        "vips" text,
+        "port" bigint NOT NULL DEFAULT '0',
+        "admin_port" bigint NOT NULL DEFAULT '0',
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "update" timestamp with time zone NOT NULL,
+        "create" timestamp with time zone NOT NULL
+    );
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE s3_load_balancer ADD COLUMN "rid" INTEGER NOT NULL;
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE cluster ADD COLUMN "name" VARCHAR(128) NOT NULL DEFAULT 'cluster';
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "user" ADD COLUMN roles varchar(255) NOT NULL DEFAULT '';
+        UPDATE "user" SET "roles" = 'admin';
+        ALTER TABLE "token" ADD COLUMN roles varchar(255) NOT NULL DEFAULT '';
+    
+2018/11/20 00:10:55 [I] [migration.go:159] exec sql: 
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "total_del_ops" bigint CHECK("total_del_ops" >= 0) NOT NULL DEFAULT '0';
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "total_del_success_ops" bigint CHECK("total_del_success_ops" >= 0) NOT NULL DEFAULT '0';
+        ALTER TABLE object_storage_bucket_stat ADD COLUMN "del_ops_pm" bigint CHECK("del_ops_pm" >= 0) NOT NULL DEFAULT '0';
+        ALTER TABLE object_storage_user_stat ADD COLUMN "total_del_ops" bigint CHECK("total_del_ops" >= 0 ) NOT NULL DEFAULT '0';
+        ALTER TABLE object_storage_user_stat ADD COLUMN "total_del_success_ops" bigint CHECK("total_del_success_ops" >= 0 ) NOT NULL DEFAULT '0';
+        ALTER TABLE object_storage_user_stat ADD COLUMN "del_ops_pm" bigint CHECK("del_ops_pm" >= 0 ) NOT NULL DEFAULT '0';
+        
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE disk_stat ADD COLUMN "healthy_percent" double precision NOT NULL DEFAULT '0';
+        ALTER TABLE disk_stat ADD COLUMN "recovery_percent" double precision NOT NULL DEFAULT '0';
+        ALTER TABLE disk_stat ADD COLUMN "degraded_percent" double precision NOT NULL DEFAULT '0';
+        ALTER TABLE disk_stat ADD COLUMN "unavailable_percent" double precision NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE alert_rule ADD COLUMN "enabled" bool NOT NULL DEFAULT '0';
+        UPDATE alert_rule SET enabled=true;
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.AccessToken"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "access_token" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+        "description" varchar(2048) NOT NULL DEFAULT '',
+        "user_id" bigint NOT NULL,
+        "uuid" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+        "roles" varchar(255) NOT NULL DEFAULT '',
+        "update" timestamp with time zone NOT NULL,
+        "create" timestamp with time zone NOT NULL
+    );
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE pool_stat ADD COLUMN "read_latency_us" bigint CHECK("read_latency_us" >= 0) NOT NULL DEFAULT '0';
+        ALTER TABLE pool_stat ADD COLUMN "write_latency_us" bigint CHECK("write_latency_us" >= 0) NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE action_log ADD COLUMN client_ip varchar(128) NOT NULL DEFAULT '';
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE cluster_stat ADD COLUMN "read_latency_us" bigint CHECK("read_latency_us" >= 0) NOT NULL DEFAULT '0';
+        ALTER TABLE cluster_stat ADD COLUMN "write_latency_us" bigint CHECK("write_latency_us" >= 0) NOT NULL DEFAULT '0';
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE volume_stat RENAME read_io_latency_us TO read_latency_us;
+        ALTER TABLE volume_stat RENAME write_io_latency_us TO write_latency_us;
+        ALTER TABLE volume_stat RENAME read_io_wait_us TO read_wait_us;
+        ALTER TABLE volume_stat RENAME write_io_wait_us TO write_wait_us;
+
+        ALTER TABLE disk_stat RENAME read_io_wait_us TO read_wait_us;
+        ALTER TABLE disk_stat RENAME write_io_wait_us TO write_wait_us;
+
+        ALTER TABLE partition_stat RENAME read_io_wait_us TO read_wait_us;
+        ALTER TABLE partition_stat RENAME write_io_wait_us TO write_wait_us;
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "protection_job" ADD COLUMN "backup_type" VARCHAR(128);
+        ALTER TABLE "protection_job" ADD COLUMN "progress" DOUBLE PRECISION NULL;
+        ALTER TABLE "protection_recovery_job" ADD COLUMN "progress" DOUBLE PRECISION NULL;
+        ALTER TABLE "protection_group_volume_mapping" DROP CONSTRAINT "protection_group_volume_mappi_protection_group_id_volume_id_key";
+        ALTER TABLE "protection_group_volume_mapping" ADD CONSTRAINT "protection_group_volume_mapping_volume_id_key" UNIQUE ("volume_id");
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE osd ADD COLUMN "init_time" timestamp with time zone;
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+        ALTER TABLE object_storage_bucket_stat RENAME up_latency TO up_latency_us;
+        ALTER TABLE object_storage_bucket_stat RENAME down_latency TO down_latency_us;
+        ALTER TABLE nfs_gateway_stat RENAME down_latency TO down_latency_us;
+        ALTER TABLE nfs_gateway_stat RENAME up_latency TO up_latency_us;
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+ALTER TABLE disk_prediction ADD COLUMN "used_kbyte_data" text DEFAULT '';
+ALTER TABLE pool_prediction ADD COLUMN "used_kbyte_data" text DEFAULT '';
+ALTER TABLE pool_prediction ADD COLUMN "data_kbyte_data" text DEFAULT '';
+    
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+		ALTER TABLE nfs_gateway ADD COLUMN "mount_clients" text DEFAULT '';
+		ALTER TABLE nfs_gateway_bucket_map ADD COLUMN "mount_clients" text DEFAULT '';
+	
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: delete from conf_item where key = 'public_network' and type = 'CephGlobal';delete from conf_item where key = 'cluster_network' and type = 'CephGlobal';
+2018/11/20 00:10:56 [I] [migration.go:110] end upgrade: V310_20170525_193835
+2018/11/20 00:10:56 [I] [migration.go:110] start upgrade V311_20170701_064708
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+ALTER TABLE volume ADD COLUMN qos_enabled bool NOT NULL DEFAULT '0';
+UPDATE volume SET qos_enabled = true WHERE qos_id IS NOT NULL;
+	
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:56 [I] [migration.go:110] end upgrade: V311_20170701_064708
+2018/11/20 00:10:56 [I] [migration.go:110] start upgrade V312_20170731_122244
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: ALTER TABLE disk ADD CONSTRAINT "disk_wwid_key" UNIQUE (wwid);
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+		ALTER TABLE osd ADD COLUMN "role" varchar(255) NOT NULL DEFAULT '';
+		UPDATE osd set "role" = 'data';
+		ALTER TABLE pool ADD COLUMN "role" varchar(255) NOT NULL DEFAULT '';
+		UPDATE pool set "role" = 'data';
+	
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+		ALTER TABLE object_storage_policy DROP COLUMN IF EXISTS "data_small_pool_id";
+		ALTER TABLE object_storage_policy DROP COLUMN IF EXISTS "data_small_pool_ids";
+		ALTER TABLE object_storage_policy RENAME "data_big_pool_id" TO "data_pool_id";
+		ALTER TABLE object_storage_policy RENAME "data_big_pool_ids" TO "data_pool_ids";
+	
+2018/11/20 00:10:56 [I] [migration.go:110] end upgrade: V312_20170731_122244
+2018/11/20 00:10:56 [I] [migration.go:110] start upgrade V320_20170816_141950
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: 
+    UPDATE pool set "pool_role" = "role";
+    ALTER TABLE pool DROP COLUMN "role";
+
+	ALTER TABLE object_storage ADD COLUMN index_pool_id bigint NOT NULL DEFAULT '0';
+	UPDATE object_storage SET index_pool_id=pool.id FROM pool WHERE pool.pool_mode='object-storage-index';
+
+	UPDATE pool SET pool_mode='system' WHERE pool_mode='object-storage-system' or pool_mode='file-storage-system';
+	UPDATE pool SET pool_mode='' WHERE pool_mode!='system';
+	
+2018/11/20 00:10:56 [I] [migration.go:159] exec sql: ALTER TABLE osd_qos ADD COLUMN "recovery_rate_type" VARCHAR DEFAULT 'low';
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+	ALTER TABLE volume ADD COLUMN "format" INTEGER;
+	UPDATE volume SET "format" = 2;
+	ALTER TABLE volume ALTER COLUMN "format" SET NOT NULL;
+	ALTER TABLE volume ADD COLUMN "performance_priority" bigint NOT NULL DEFAULT '0';
+	
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+		ALTER TABLE object_storage_bucket ADD COLUMN flags text;
+		UPDATE object_storage_bucket SET flags='{"worm": false, "versioned": false}';
+	
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: ALTER TABLE cluster ADD COLUMN "os_gateway_oplog_switch" bool NOT NULL DEFAULT '0';
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: ALTER TABLE cluster ADD COLUMN "stats_reserved_days" INTEGER NOT NULL DEFAULT '90';
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: ALTER TABLE protection_site ADD COLUMN backup_size bigint NOT NULL DEFAULT '0';
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+	ALTER TABLE protection_plan ADD COLUMN deduplicated bool NOT NULL DEFAULT '0';
+	ALTER TABLE protection_plan ADD COLUMN compressed bool NOT NULL DEFAULT '0';
+	ALTER TABLE protection_plan ADD COLUMN encrypted bool NOT NULL DEFAULT '0';
+	
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "object_storage_zone" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"cluster_url" text NOT NULL DEFAULT '',
+		"cluster_access_token" varchar(256) NOT NULL DEFAULT '',
+		"cluster_fs_id" varchar(64) NOT NULL DEFAULT '',
+		"cluster_name" VARCHAR(128) NOT NULL DEFAULT 'cluster',
+		"endpoints" text NOT NULL DEFAULT '',
+		"realm_name" varchar(256) NOT NULL DEFAULT '',
+		"zonegroup_name" varchar(256) NOT NULL DEFAULT '',
+		"zone_id" varchar(256) NOT NULL DEFAULT '',
+		"name" varchar(256) NOT NULL DEFAULT '',
+		"master" bool NOT NULL DEFAULT '0',
+		"local" bool NOT NULL DEFAULT '0',
+		"system_user" varchar(256) NOT NULL DEFAULT '',
+		"system_access_key" varchar(256) NOT NULL DEFAULT '',
+		"system_secret_key" varchar(256) NOT NULL DEFAULT '',
+		"status" varchar(256) NOT NULL DEFAULT '',
+		"create" timestamp with time zone NOT NULL,
+		"update" timestamp with time zone NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS "object_storage_replication_policy" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"name" VARCHAR(128) NOT NULL DEFAULT '',
+		"rule" text NOT NULL DEFAULT '',
+		"create" timestamp with time zone NOT NULL,
+		"update" timestamp with time zone NOT NULL
+	);
+	ALTER TABLE "object_storage_bucket" ADD COLUMN "zone_id" bigint;
+	ALTER TABLE "object_storage_bucket" ADD COLUMN "replication_policy_id" bigint;
+	ALTER TABLE "object_storage_bucket" ADD COLUMN "virtual" bool NOT NULL DEFAULT '0';
+	ALTER TABLE "object_storage_bucket" ALTER COLUMN "policy_id" DROP NOT NULL;
+	
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+CREATE TABLE IF NOT EXISTS "crypto_key" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+    "size" bigint NOT NULL DEFAULT '0',
+    "key" text NOT NULL DEFAULT '',
+    "enabled" bool NOT NULL DEFAULT '0',
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+ALTER TABLE protection_site ADD COLUMN "crypto_key_id" bigint;
+    
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.CloudPlatform"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cloud_platform" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(256) NOT NULL DEFAULT '' ,
+    "url" text NOT NULL DEFAULT '' ,
+    "type" varchar(256) NOT NULL DEFAULT '' ,
+    "status" varchar(256) NOT NULL DEFAULT '' ,
+    "action_status" varchar(256) NOT NULL DEFAULT '' ,
+    "username" varchar (256) NOT NULL DEFAULT '' ,
+    "password" varchar(256) NOT NULL DEFAULT '' ,
+    "extra_properties" varchar(256) NOT NULL DEFAULT '' ,
+    "description" varchar(2048) NOT NULL DEFAULT '',
+    "sync_time" timestamp with time zone,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.CloudInstance"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cloud_instance" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(256) NOT NULL DEFAULT '' ,
+    "cloud_instance_id" varchar(256) NOT NULL DEFAULT '',
+    "cores" bigint CHECK("cores" >= 0) NOT NULL DEFAULT '0',
+    "memory_kbyte" bigint CHECK("memory_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "hostname" varchar(256) NOT NULL DEFAULT '' ,
+    "root_device_type" varchar(256) NOT NULL DEFAULT '' ,
+    "cloud_datacenter_id" bigint CHECK("cloud_datacenter_id" >= 0) NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.CloudVolume"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cloud_volume" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(256),
+    "cloud_volume_id" varchar(256) NOT NULL DEFAULT '',
+    "type" varchar(256) NOT NULL DEFAULT '',
+    "multi_attach" bool NOT NULL DEFAULT '0' ,
+    "block_volume_id" bigint CHECK("block_volume_id" >= 0) NOT NULL,
+    "cloud_datacenter_id" bigint CHECK("cloud_datacenter_id" >= 0) NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.CloudVolumeAttachment"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cloud_volume_attachment" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "cloud_instance_id" bigint CHECK("cloud_instance_id" >= 0) NOT NULL,
+    "cloud_volume_id" bigint CHECK("cloud_volume_id" >= 0) NOT NULL,
+    "device" varchar(256) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.CloudDatacenter"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cloud_datacenter" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(256) NOT NULL DEFAULT '' ,
+    "cloud_datacenter_id" varchar(256) NOT NULL DEFAULT '',
+    "cloud_platform_id" bigint CHECK("cloud_platform_id" >= 0) NOT NULL,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+-- --------------------------------------------------
+--  Table Structure for "xsky-demon/models.CloudInstanceStat"
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "cloud_instance_stat" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "cloud_instance_id" bigint NOT NULL,
+    "read_iops" bigint CHECK("read_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "read_bandwidth_kbyte" bigint CHECK("read_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "read_latency_us" bigint CHECK("read_latency_us" >= 0) NOT NULL DEFAULT '0' ,
+    "read_wait_us" bigint CHECK("read_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "write_iops" bigint CHECK("write_iops" >= 0) NOT NULL DEFAULT '0' ,
+    "write_bandwidth_kbyte" bigint CHECK("write_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0' ,
+    "write_latency_us" bigint CHECK("write_latency_us" >= 0) NOT NULL DEFAULT '0' ,
+    "write_wait_us" bigint CHECK("write_wait_us" >= 0) NOT NULL DEFAULT '0' ,
+    "total_iops" bigint CHECK("total_iops" >= 0) NOT NULL DEFAULT '0',
+    "total_bandwidth_kbyte" bigint CHECK("total_bandwidth_kbyte" >= 0) NOT NULL DEFAULT '0',
+    "create" timestamp with time zone NOT NULL
+);
+CREATE INDEX "cloud_instance_stat_cloud_instance_id" on "cloud_instance_stat" ("cloud_instance_id");
+CREATE INDEX "cloud_instance_stat_create" on "cloud_instance_stat" ("create");
+
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+        CREATE TABLE IF NOT EXISTS "identity_platform" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "uuid" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+            "name" varchar(256) NOT NULL DEFAULT '' ,
+            "url" text NOT NULL DEFAULT '' ,
+            "type" varchar(256) NOT NULL DEFAULT '' ,
+            "key" varchar(256) NOT NULL DEFAULT '' ,
+            "enabled" bool NOT NULL DEFAULT '0' ,
+            "success_num" bigint CHECK("success_num" >= 0) NOT NULL DEFAULT '0',
+            "failure_num" bigint CHECK("failure_num" >= 0) NOT NULL DEFAULT '0',
+            "create" timestamp with time zone NOT NULL,
+            "update" timestamp with time zone NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS "role_mapping" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "identity_platform_id" bigint NOT NULL,
+            "role" varchar(256) NOT NULL DEFAULT '' ,
+            "value" varchar(256) NOT NULL DEFAULT '' ,
+            "create" timestamp with time zone NOT NULL,
+            "update" timestamp with time zone NOT NULL
+        );
+
+        ALTER TABLE "user" ADD COLUMN "external_id" varchar(256);
+        ALTER TABLE "user" ADD COLUMN "identity_platform_id" bigint;
+        ALTER TABLE "user" DROP CONSTRAINT "user_name_key";
+        ALTER TABLE "user" DROP CONSTRAINT "user_email_key";
+	
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS volume_backup, volume_backup_rule RESTRICT;
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "user" ADD COLUMN "dashboard_setting" text DEFAULT '';
+	
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+    ALTER TABLE pool ADD COLUMN "default_managed_volume_format" INTEGER NULL;
+    
+2018/11/20 00:10:57 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSAribrationPool"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_arbitration_pool" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "pool_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSUser"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_user" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(128) NOT NULL DEFAULT '',
+        "email" varchar(256) NOT NULL DEFAULT '',
+        "password" varchar(256) NOT NULL DEFAULT '' ,
+        "enabled" bool NOT NULL DEFAULT '0' ,
+        "security" varchar(128) NOT NULL DEFAULT '',
+        "available" bool NOT NULL DEFAULT '0' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSADUser"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ad_user" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(128) NOT NULL DEFAULT '',
+        "fs_user_id" bigint,
+        "directory_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSFolder"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_folder" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+        "size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0' ,
+        "pool_id" bigint NOT NULL,
+        "block_volume_id" bigint,
+        "access_path_id" bigint NOT NULL,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "formatted" bool NOT NULL DEFAULT '0',
+        "flattened" bool NOT NULL DEFAULT '0' ,
+        "fs_snapshot_id" bigint,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSShare"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_share" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "type" varchar(128) NOT NULL DEFAULT '',
+        "folder_id" bigint NOT NULL,
+        "gateway_group_id" bigint NOT NULL,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "public" bool NOT NULL DEFAULT '0',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSShareMapping"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_share_mapping" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "type" varchar(128) NOT NULL DEFAULT '',
+        "gateway_id" bigint NOT NULL,
+        "share_id" bigint NOT NULL,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSShareACL"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_share_acl" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "share_id" bigint NOT NULL,
+        "access_group_id" bigint,
+        "permission" varchar(128) NOT NULL DEFAULT '' ,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSAccessGroup"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_access_group" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+        "type" varchar(256) NOT NULL DEFAULT '',
+        "security" varchar(256) NOT NULL DEFAULT '',
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSClient"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_client" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT '' ,
+        "ip" text NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSAccessGroupFSUsers"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_access_group_fs_users" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_access_group_id" bigint NOT NULL,
+        "fs_user_id" bigint NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSAccessGroupFSClients"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_access_group_fs_clients" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_access_group_id" bigint NOT NULL,
+        "fs_client_id" bigint NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSGateway"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_gateway" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "host_id" bigint NOT NULL,
+        "gateway_group_id" bigint NOT NULL,
+        "vip" varchar(128) NOT NULL DEFAULT '' ,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSGatewayGroup"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_gateway_group" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+        "description" varchar(1024) NOT NULL DEFAULT '',
+        "types" text NOT NULL DEFAULT '' ,
+        "security" varchar(256) NOT NULL DEFAULT '',
+        "port" bigint CHECK("port" >= 0) NOT NULL DEFAULT 0 ,
+        "vip" varchar(128) NOT NULL DEFAULT '' ,
+        "encoding" varchar(256) NOT NULL DEFAULT '',
+        "nodes_config" text NOT NULL DEFAULT '' ,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSSnapshot"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_snapshot" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+        "description" varchar(2048) NOT NULL DEFAULT '' ,
+        "folder_id" bigint NOT NULL,
+        "formatted" bool NOT NULL DEFAULT '0',
+        "block_snapshot_id" bigint,
+        "status" text NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSActiveDirectory"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_active_directory" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+        "workgroup" varchar(256) NOT NULL DEFAULT '',
+        "realm" varchar(256) NOT NULL DEFAULT '',
+        "ip" varchar(128) NOT NULL DEFAULT '' ,
+        "username" varchar(256) NOT NULL DEFAULT '',
+        "password" varchar(256) NOT NULL DEFAULT '',
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "sync_time" timestamp with time zone,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    ALTER TABLE "volume" ADD COLUMN "hidden" bool NOT NULL  DEFAULT FALSE;
+    ALTER TABLE "snapshot" ADD COLUMN "hidden" bool NOT NULL  DEFAULT FALSE;
+    ALTER TABLE "access_path" ADD COLUMN "hidden" bool NOT NULL  DEFAULT FALSE;
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "host" ADD COLUMN "vendor" varchar(256) DEFAULT '';
+        ALTER TABLE "host" ADD COLUMN "model" varchar(256) DEFAULT '';
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+	ALTER TABLE "task" ADD COLUMN "retried" bool NOT NULL DEFAULT '0';
+	ALTER TABLE "task" ADD COLUMN "retry_type" varchar(128) NOT NULL DEFAULT '';
+	ALTER TABLE "task" ADD COLUMN "host_role" varchar(128) NOT NULL DEFAULT '';
+	ALTER TABLE "task" ADD COLUMN "not_before" timestamp with time zone;
+	
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS volume_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS cloud_instance_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS host_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS disk_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS partition_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS object_storage_user_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS object_storage_bucket_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS object_storage_gateway_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS nfs_gateway_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS protection_domain_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS pool_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: DROP TABLE IF EXISTS cluster_stat RESTRICT;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    ALTER TABLE "s3_load_balancer" ADD COLUMN "etag" varchar(36) NOT NULL DEFAULT '';
+    ALTER TABLE "s3_load_balancer_group" ADD COLUMN "etag" varchar(36) NOT NULL DEFAULT '';
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    ALTER TABLE "osd" ADD COLUMN "etag" varchar(36) NOT NULL DEFAULT '';
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "event_log" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"user_id" bigint NOT NULL,
+		"host_id" bigint NOT NULL,
+		"resource_type" varchar(256) NOT NULL DEFAULT '' ,
+		"resource_id" bigint,
+		"event" varchar(256) NOT NULL DEFAULT '' ,
+		"message" text,
+		"data" text,
+		"create" timestamp with time zone NOT NULL
+	);
+	
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    ALTER TABLE "disk" ADD COLUMN "slot_id" varchar(16) DEFAULT '';
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+	ALTER TABLE "object_storage" ADD COLUMN "lifecycle_start_on" varchar(128) NOT NULL DEFAULT '';
+	ALTER TABLE "object_storage" ADD COLUMN "lifecycle_end_on" varchar(128) NOT NULL DEFAULT '';
+	ALTER TABLE "object_storage" ADD COLUMN "action_status" varchar(256) NOT NULL DEFAULT '';
+	UPDATE "object_storage" set "lifecycle_start_on" = '01:00';
+	UPDATE "object_storage" set "lifecycle_end_on" = '07:00';
+	
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.SSLCertificate"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "ssl_certificate" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+        "description" varchar(1024) NOT NULL DEFAULT '',
+        "status" varchar(64) NOT NULL DEFAULT '',
+        "enabled" bool NOT NULL DEFAULT '0',
+        "type" varchar(32) NOT NULL DEFAULT '',
+        "force_https" bool NOT NULL DEFAULT '0',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL,
+
+        "raw_certificate" text,
+        "raw_private_key" text,
+        "signature_algorithm" varchar(128) NOT NULL DEFAULT '' ,
+        "public_key_algorithm" varchar(128) NOT NULL DEFAULT '',
+        "issuer" text,
+        "subject" text,
+        "version" integer NOT NULL DEFAULT '0',
+        "not_before" timestamp with time zone NULL,
+        "not_after" timestamp with time zone NULL,
+        "permitted_dns_domains" text
+    );
+
+    ALTER TABLE s3_load_balancer ADD COLUMN "https_port" bigint NOT NULL DEFAULT '443';
+    ALTER TABLE s3_load_balancer_group ADD COLUMN "https_port" bigint NOT NULL DEFAULT '443';
+    ALTER TABLE s3_load_balancer ADD COLUMN "ssl_certificate_id" bigint;
+    ALTER TABLE service ADD COLUMN "ssl_certificate_id" bigint;
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+	ALTER TABLE snapshot ADD COLUMN "allocated_size" bigint NOT NULL DEFAULT '0';
+	
+2018/11/20 00:10:58 [I] [migration.go:110] end upgrade: V320_20170816_141950
+2018/11/20 00:10:58 [I] [migration.go:110] start upgrade V321_20171215_155202
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: ALTER TABLE "s3_load_balancer" ADD CONSTRAINT s3_load_balancer_rid_unique UNIQUE ("rid");
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: ALTER TABLE "fs_folder" ADD COLUMN "snapshot_formatted" bool NOT NULL DEFAULT '0';
+2018/11/20 00:10:58 [I] [migration.go:110] end upgrade: V321_20171215_155202
+2018/11/20 00:10:58 [I] [migration.go:110] start upgrade V326_20171225_151337
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: UPDATE "osd" SET "status" = 'stopped' where "status" in ('warning', 'error');
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    CREATE TABLE IF NOT EXISTS "remote_cluster" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_id" varchar(64) NOT NULL DEFAULT '' UNIQUE,
+        "name" varchar(256) NOT NULL DEFAULT '',
+        "url" text NOT NULL DEFAULT '',
+        "access_token" varchar(256) NOT NULL DEFAULT '',
+        "status" varchar(256) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+    ALTER TABLE "cluster" ADD COLUMN "access_token_id" bigint;
+    ALTER TABLE "cluster" ADD COLUMN "access_url" text;
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    CREATE TABLE IF NOT EXISTS "dp_block_snapshot_policy" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT '' UNIQUE,
+        "cron_expr" text NOT NULL DEFAULT '',
+        "retained_max" bigint NOT NULL DEFAULT '1',
+        "dp_gateway_id" bigint NOT NULL,
+        "status" varchar(256) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_block_replication_policy" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT '' UNIQUE,
+        "dp_site_id" bigint NOT NULL,
+        "timeout_seconds" bigint NOT NULL DEFAULT '0',
+        "status" varchar(256) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_site" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT '' UNIQUE,
+        "protection_type" varchar(255) NOT NULL DEFAULT '',
+        "platform" varchar(255) NOT NULL DEFAULT '',
+        "service" varchar(255) NOT NULL DEFAULT '',
+        "address" text DEFAULT '',
+        "remote_cluster_id" bigint,
+        "config" text NOT NULL DEFAULT '',
+        "crypto_key_id" bigint,
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_block_snapshot_plan" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "type" varchar(255) NOT NULL DEFAULT '',
+        "dp_block_snapshot_policy_id" bigint NOT NULL,
+        "dp_site_id" bigint NOT NULL,
+        "operation_interval" bigint NOT NULL DEFAULT '0',
+        "full_backup_interval" bigint NOT NULL DEFAULT '0',
+        "retained_max" bigint NOT NULL DEFAULT '1',
+        "deduplicated" bool NOT NULL DEFAULT '0',
+        "compressed" bool NOT NULL DEFAULT '0',
+        "encrypted" bool NOT NULL DEFAULT '0',
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL,
+        UNIQUE ("dp_block_snapshot_policy_id", "dp_site_id")
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_block_snapshot_plan_volume_mapping" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "dp_block_snapshot_plan_id" bigint NOT NULL,
+        "block_volume_id" bigint NOT NULL,
+        "operation_skip_count" bigint,
+        "snapshot_replication_volume_id" bigint,
+        "snapshot_replication_volume" varchar(255),
+        "snapshot_replication_pool_id" bigint,
+        "snapshot_replication_pool" varchar(255),
+        "snapshot_replication_status" varchar(255),
+        "snapshot_replication_role" varchar(255),
+        "create" timestamp with time zone NOT NULL,
+        UNIQUE ("dp_block_snapshot_plan_id", "block_volume_id")
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_block_snapshot_job" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "block_volume_id" bigint,
+        "block_snapshot_id" bigint,
+        "dp_block_snapshot_policy_id" bigint NOT NULL,
+        "dp_block_snapshot_plan_id" bigint,
+        "size" bigint NOT NULL DEFAULT '0',
+        "progress" double precision NULL,
+        "diff_type" varchar(255) NOT NULL DEFAULT '',
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "started_at" timestamp with time zone,
+        "updated_at" timestamp with time zone,
+        "finished_at" timestamp with time zone
+    );
+    CREATE INDEX "dp_block_snapshot_job_dp_block_snapshot_policy_id" on "dp_block_snapshot_job" ("dp_block_snapshot_policy_id");
+    CREATE INDEX "dp_block_snapshot_job_dp_block_snapshot_plan_id" on "dp_block_snapshot_job" ("dp_block_snapshot_plan_id");
+    CREATE INDEX "dp_block_snapshot_job_block_volume_id" on "dp_block_snapshot_job" ("block_volume_id");
+    CREATE INDEX "dp_block_snapshot_job_block_snapshot_id" on "dp_block_snapshot_job" ("block_snapshot_id");
+
+    CREATE TABLE IF NOT EXISTS "dp_block_snapshot_recovery_job" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "resource_type" varchar(255) NOT NULL DEFAULT '',
+        "dp_gateway_id" bigint NOT NULL,
+        "dp_site_id" bigint NOT NULL,
+        "volume_id" bigint NOT NULL,
+        "data" text NOT NULL DEFAULT '',
+        "progress" DOUBLE PRECISION NULL,
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "started_at" timestamp with time zone,
+        "updated_at" timestamp with time zone,
+        "finished_at" timestamp with time zone,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_gateway" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "host_id" bigint NOT NULL,
+        "name" varchar(256) NOT NULL DEFAULT '' UNIQUE,
+        "admin_port" bigint NOT NULL DEFAULT '0' ,
+        "gateway_port" bigint NOT NULL DEFAULT '0',
+        "pid" bigint NOT NULL DEFAULT '0' ,
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    ALTER TABLE "volume" ADD COLUMN "dp_block_snapshot_policy_id" bigint;
+    ALTER TABLE "volume" ADD COLUMN "dp_block_replication_policy_id" bigint;
+    ALTER TABLE "volume" ADD COLUMN "backup_chain_name" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "snapshot_replication_volume_id" bigint;
+    ALTER TABLE "volume" ADD COLUMN "snapshot_replication_volume" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "snapshot_replication_pool_id" bigint;
+    ALTER TABLE "volume" ADD COLUMN "snapshot_replication_pool" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "snapshot_replication_status" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "snapshot_replication_role" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_volume_id" bigint;
+    ALTER TABLE "volume" ADD COLUMN "replication_volume" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_volume_name" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_pool_id" bigint;
+    ALTER TABLE "volume" ADD COLUMN "replication_pool" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_pool_name" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_status" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_dest" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_role" varchar(255);
+    ALTER TABLE "volume" ADD COLUMN "replication_version" integer;
+    ALTER TABLE "volume" ADD COLUMN "remote_cluster_id" bigint;
+
+    ALTER TABLE "snapshot" ADD COLUMN "remote_cluster_id" bigint;
+    ALTER TABLE "snapshot" ADD COLUMN "creator" varchar(255);
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    ALTER TABLE "object_storage_zone" ADD COLUMN "remote_cluster_id" bigint;
+    ALTER TABLE "object_storage_zone" DROP COLUMN "cluster_url";
+    ALTER TABLE "object_storage_zone" DROP COLUMN "cluster_access_token";
+    ALTER TABLE "object_storage_zone" DROP COLUMN "cluster_fs_id";
+    ALTER TABLE "object_storage_zone" DROP COLUMN "cluster_name";
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    DROP TABLE IF EXISTS "fs_access_group_fs_clients";
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSClientGroup"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_client_group" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT ''  UNIQUE,
+        "action_status" text NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FsClientGroupFsClients"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_client_group_fs_clients" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_client_group_id" bigint NOT NULL,
+        "fs_client_id" bigint NOT NULL
+    );
+
+    ALTER TABLE "fs_share_acl" ADD COLUMN "client_group_id" bigint;
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.NetworkInterface"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "network_interface" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(256) NOT NULL DEFAULT '',
+        "mac_address" varchar(256) NOT NULL DEFAULT '',
+        "type" varchar(256) NOT NULL DEFAULT '',
+        "megabits" bigint NOT NULL,
+        "operstate" varchar(256) NOT NULL DEFAULT '',
+        "bonding_mode" varchar(256) NOT NULL DEFAULT '',
+        "link_detected" bool NOT NULL DEFAULT '0',
+        "master_id" bigint,
+        "host_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.NetworkAddress"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "network_address" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "ip" varchar(128) NOT NULL DEFAULT '' ,
+        "mask" INTEGER NOT NULL DEFAULT 32,
+        "roles" varchar(256) NOT NULL DEFAULT '',
+        "available" bool NOT NULL DEFAULT '0',
+        "network_interface_id" bigint,
+        "host_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+    
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: ALTER TABLE "fs_folder" ADD COLUMN "description" text NOT NULL DEFAULT '';
+        ALTER TABLE "fs_folder" ADD COLUMN "used_kbyte" DOUBLE PRECISION NULL;
+2018/11/20 00:10:58 [I] [migration.go:159] exec sql: ALTER TABLE "s3_load_balancer" ADD COLUMN "vip_mask" INTEGER NOT NULL DEFAULT 32;
+        ALTER TABLE "s3_load_balancer" ADD COLUMN "interface_name" varchar(64) NOT NULL DEFAULT '';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSLdap"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ldap" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" text NOT NULL DEFAULT '' ,
+        "ip" text NOT NULL DEFAULT '' ,
+        "ips" text NOT NULL DEFAULT '' ,
+        "port" integer NOT NULL DEFAULT 0 ,
+        "suffix" text NOT NULL DEFAULT '' ,
+        "admin_dn" text NOT NULL DEFAULT '' ,
+        "password" text NOT NULL DEFAULT '' ,
+        "user_suffix" text NOT NULL DEFAULT '' ,
+        "timeout" bigint NOT NULL DEFAULT 0 ,
+        "connection_timeout" bigint NOT NULL DEFAULT 0 ,
+        "status" text NOT NULL DEFAULT '' ,
+        "action_status" text NOT NULL DEFAULT '' ,
+        "sync_time" timestamp with time zone,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.FSLdapUser"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ldap_user" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" text NOT NULL DEFAULT '' ,
+        "fs_user_id" bigint,
+        "ldap_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+    
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE disk ADD COLUMN is_root bool NOT NULL DEFAULT '0';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "host" ADD COLUMN "clock_diff" INTEGER NOT NULL DEFAULT 0;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+        ALTER TABLE fs_user RENAME security TO type;
+        ALTER TABLE fs_access_group DROP COLUMN type;
+        ALTER TABLE fs_access_group RENAME security TO type;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: UPDATE conf_item SET key = 'smtp_skip_tls_cert_verify' WHERE key = 'smtp_skip_verify';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "service" ADD COLUMN "up" bool NOT NULL DEFAULT '1';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "smart_attr" ADD COLUMN "status" varchar(256) NOT NULL DEFAULT '';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: CREATE INDEX "placement_group_scrub_scrub_time" on "placement_group_scrub" ("scrub_time");
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE fs_folder DROP COLUMN snapshot_formatted;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+DROP TABLE IF EXISTS "search_operation";
+-- --------------------------------------------------
+--  Table Structure for 'xsky-demon/models.OperationFeedback'
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "operation_feedback" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "event" varchar(128) NOT NULL,
+    "table_name" varchar(128) NOT NULL,
+    "resource_id" bigint,
+    "old_data" text NOT NULL,
+    "new_data" text NOT NULL,
+    "create" timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+CREATE EXTENSION IF NOT EXISTS plpythonu;
+
+CREATE OR REPLACE FUNCTION operation_feedback_insert() RETURNS TRIGGER AS $$
+    import json
+
+    resource_id = 0
+    if TD["old"]:
+        resource_id = TD["old"].get("id", 0)
+    if TD["new"]:
+        resource_id = TD["new"].get("id", 0)
+    plan = plpy.prepare((
+        "INSERT INTO operation_feedback(event, table_name, resource_id, old_data, new_data)"
+        " VALUES ($1, $2, $3, $4, $5)"),
+                        ["text", "text", "integer", "text", "text"])
+    plpy.execute(plan, [
+        TD["event"], TD["table_name"], resource_id,
+        json.dumps(TD["old"]),
+        json.dumps(TD["new"])
+    ])
+$$ LANGUAGE plpythonu;
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "placement_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "placement_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "placement_group_scrub";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "placement_group_scrub"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "placement_group_osd";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "placement_group_osd"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "pool_property";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "pool_property"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "osd";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "osd"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "action_log";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "action_log"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "alert";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "alert"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "conf_item";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "conf_item"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "cluster";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "cluster"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "osd_qos";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "osd_qos"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "disk";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "disk"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "host";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "host"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "host_fc_port";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "host_fc_port"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "protection_domain";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "protection_domain"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "license";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "license"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "pool";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "pool"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "volume_qos_spec";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "volume_qos_spec"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "volume";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "volume"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "boot_node";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "boot_node"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "service";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "service"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "snapshot";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "snapshot"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "token";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "token"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "user";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "user"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_key";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_key"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_user";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_user"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_gateway";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_gateway"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_policy";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_policy"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_archive_pool";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_archive_pool"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "partition";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "partition"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "alert_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "alert_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "email_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "email_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_bucket";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_bucket"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "smart_attr";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "smart_attr"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "target";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "target"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "mapping_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "mapping_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "lun";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "lun"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "client_lun_mapping";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "client_lun_mapping"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "mapping_group_volumes";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "mapping_group_volumes"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "access_path";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "access_path"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "client";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "client"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "client_code";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "client_code"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "placement_node";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "placement_node"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "pool_placement_node";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "pool_placement_node"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_lifecycle";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_lifecycle"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "disk_prediction";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "disk_prediction"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "pool_prediction";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "pool_prediction"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_bucket_nfs_client";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_bucket_nfs_client"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "nfs_gateway";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "nfs_gateway"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "nfs_gateway_bucket_map";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "nfs_gateway_bucket_map"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "system_log";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "system_log"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "alert_group_email_group_map";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "alert_group_email_group_map"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "alert_group_alert_rule_map";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "alert_group_alert_rule_map"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "progress_info";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "progress_info"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "client_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "client_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "pool_property_item";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "pool_property_item"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "snmp_gateway";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "snmp_gateway"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "trap_receiver";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "trap_receiver"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "protection_site";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "protection_site"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_site";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_site"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_gateway";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_gateway"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_block_replication_policy";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_block_replication_policy"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_block_snapshot_policy";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_block_snapshot_policy"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_block_snapshot_plan";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_block_snapshot_plan"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_block_snapshot_job";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_block_snapshot_job"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_block_snapshot_recovery_job";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_block_snapshot_recovery_job"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "s3_load_balancer_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "s3_load_balancer_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "s3_load_balancer";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "s3_load_balancer"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "alert_rule";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "alert_rule"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "access_token";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "access_token"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "protection_plan";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "protection_plan"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_zone";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_zone"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "object_storage_replication_policy";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "object_storage_replication_policy"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "crypto_key";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "crypto_key"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "cloud_platform";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "cloud_platform"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "cloud_instance";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "cloud_instance"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "cloud_volume";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "cloud_volume"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "cloud_volume_attachment";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "cloud_volume_attachment"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ad_user";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ad_user"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "cloud_datacenter";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "cloud_datacenter"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "identity_platform";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "identity_platform"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "role_mapping";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "role_mapping"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_arbitration_pool";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_arbitration_pool"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_user";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_user"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_folder";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_folder"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_share";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_share"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_share_mapping";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_share_mapping"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_share_acl";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_share_acl"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_access_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_access_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_client";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_client"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_access_group_fs_users";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_access_group_fs_users"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_client_group_fs_clients";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_client_group_fs_clients"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_gateway";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_gateway"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_gateway_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_gateway_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_snapshot";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_snapshot"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_active_directory";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_active_directory"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "event_log";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "event_log"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "ssl_certificate";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "ssl_certificate"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "network_address";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "network_address"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "network_interface";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "network_interface"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ldap";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ldap"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ldap_user";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ldap_user"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_client_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_client_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for 'xsky-demon/models.VolumeGroup'
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_group" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "volume_group_snapshot_id" bigint,
+    "action_status" text NOT NULL DEFAULT '' ,
+    "status" text NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL,
+    "flattened" bool NOT NULL DEFAULT '0'
+);
+
+-- --------------------------------------------------
+--  Table Structure for 'xsky-demon/models.VolumeGroupSnapshot'
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "volume_group_snapshot" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "name" varchar(128) NOT NULL DEFAULT ''  UNIQUE,
+    "volume_group_id" bigint NOT NULL,
+    "description" varchar(2048) NOT NULL DEFAULT '' ,
+    "status" text NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "volume" ADD COLUMN "volume_group_id" bigint;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "snapshot" ADD COLUMN "volume_group_snapshot_id" bigint;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "volume_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "volume_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "volume_group_snapshot";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "volume_group_snapshot"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "host" ADD COLUMN "slot_num" integer NOT NULL DEFAULT '0';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "host_validator" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "host_type" varchar(256) NOT NULL DEFAULT '' ,
+        "host_roles" text NOT NULL DEFAULT '' ,
+        "admin_ip" varchar(128) NOT NULL DEFAULT '' ,
+        "public_ip" varchar(128) NOT NULL DEFAULT '' ,
+        "private_ip" varchar(128) NOT NULL DEFAULT '' ,
+        "gateway_ips" text NOT NULL DEFAULT '' ,
+        "report" text NOT NULL DEFAULT '' ,
+        "status" varchar(256) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+    
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: UPDATE pool SET default_managed_volume_format=128 WHERE default_managed_volume_format is NULL;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+ALTER TABLE "disk" ADD COLUMN "driver_type" varchar(255) NOT NULL DEFAULT '';
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+ALTER TABLE "object_storage_bucket" ADD COLUMN "action_status" varchar(255) NOT NULL DEFAULT '';
+
+UPDATE "object_storage_bucket" SET action_status='active';
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+2018/11/20 00:10:59 [I] [migration.go:110] end upgrade: V326_20171225_151337
+2018/11/20 00:10:59 [I] [migration.go:110] start upgrade V3210_20180321_163346
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+ALTER TABLE "pool" ADD COLUMN "io_bypass_enabled" bool NOT NULL DEFAULT '0';
+ALTER TABLE "pool" ADD COLUMN "io_bypass_threshold" bigint CHECK("io_bypass_threshold" >= 0) NOT NULL DEFAULT '0';
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "volume" ADD COLUMN "migration_stripes" bigint;
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "remote_cluster";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "remote_cluster"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:10:59 [I] [migration.go:110] end upgrade: V3210_20180321_163346
+2018/11/20 00:10:59 [I] [migration.go:110] start upgrade V3211_20180423_120418
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+ALTER TABLE "alert" ADD COLUMN "extra_data" text;
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "partition" ADD COLUMN "journal_uuid" varchar(255) NOT NULL DEFAULT '';
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+CREATE TABLE IF NOT EXISTS "cluster_service" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "type" varchar(256) NOT NULL DEFAULT '' ,
+    "status" varchar(256) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL,
+    "update" timestamp with time zone NOT NULL
+);
+
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: 
+ALTER TABLE "object_storage_policy" ADD COLUMN "status" varchar(255);
+	UPDATE object_storage_policy SET status = 'active';
+	
+2018/11/20 00:10:59 [I] [migration.go:110] end upgrade: V3211_20180423_120418
+2018/11/20 00:10:59 [I] [migration.go:110] start upgrade V3213_20180522_233954
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE fs_user ADD UNIQUE (name);
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "host" DROP COLUMN "slot_num";
+2018/11/20 00:10:59 [I] [migration.go:159] exec sql: ALTER TABLE "host" ADD COLUMN "enclosures" text DEFAULT '';
+2018/11/20 00:11:00 [I] [migration.go:159] exec sql: ALTER TABLE "disk" ADD COLUMN "enclosure_id" varchar(32) DEFAULT '';
+2018/11/20 00:11:00 [I] [migration.go:159] exec sql: ALTER TABLE "task" ADD COLUMN "priority" bigint NOT NULL DEFAULT 0;
+2018/11/20 00:11:00 [I] [migration.go:159] exec sql: ALTER TABLE "fs_gateway_group" ADD COLUMN "vip_mask" INTEGER NOT NULL DEFAULT 32;
+		UPDATE "fs_gateway_group" SET "vip_mask"=24;
+2018/11/20 00:11:00 [I] [migration.go:110] end upgrade: V3213_20180522_233954
+2018/11/20 00:11:00 [I] [migration.go:110] start upgrade V3215_20180806_162429
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+ALTER TABLE "snmp_gateway"
+    ADD COLUMN "version" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "read_community" varchar(256) NOT NULL DEFAULT 'public' ,
+    ADD COLUMN "write_community" varchar(256) NOT NULL DEFAULT 'private' ,
+    ADD COLUMN "user_name" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "security_level" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "auth_password" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "auth_protocol" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "priv_password" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "priv_protocol" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "security_engine_id" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "context_engine_id" varchar(256) NOT NULL DEFAULT '' ,
+    ADD COLUMN "context_name" varchar(256) NOT NULL DEFAULT '';
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: ALTER TABLE "object_storage_bucket" ADD COLUMN "export_id" bigint NOT NULL DEFAULT 0;
+              UPDATE object_storage_bucket SET export_id=id;
+         
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+DELETE FROM alert_rule WHERE resource_type = 'osd' AND type = 'capacity-usage';
+DELETE FROM alert_rule WHERE resource_type = 'pool' AND trigger_value = 'full';
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+-- --------------------------------------------------
+--  Table Structure for 'xsky-demon/models.AuthFailure'
+-- --------------------------------------------------
+CREATE TABLE IF NOT EXISTS "auth_failure" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "user_name" text NOT NULL DEFAULT '' ,
+    "request_ip" text NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL
+);
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+ALTER TABLE "user" ADD COLUMN "password_last_update" timestamp with time zone;
+UPDATE "user" SET password_last_update=NOW();
+ALTER TABLE "user" ALTER COLUMN "password_last_update" SET NOT NULL;
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for models.FSADUserGroup
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ad_user_group" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" text NOT NULL DEFAULT '' ,
+        "fs_access_group_id" bigint,
+        "directory_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for models.FSLdapUserGroup
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ldap_user_group" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" text NOT NULL DEFAULT '' ,
+        "fs_access_group_id" bigint,
+        "ldap_id" bigint NOT NULL,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for models.FSADUserGroupFSADUsers
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ad_user_group_fs_ad_users" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_ad_user_group_id" bigint NOT NULL,
+        "fs_ad_user_id" bigint NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for models.FSLdapUserGroupFSLdapUsers
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_ldap_user_group_fs_ldap_users" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_ldap_user_group_id" bigint NOT NULL,
+        "fs_ldap_user_id" bigint NOT NULL
+    );
+
+    ALTER TABLE "fs_ldap" ADD COLUMN "group_suffix" text NOT NULL  DEFAULT '';
+
+    ALTER TABLE "fs_access_group" ADD COLUMN "imported" bool NOT NULL DEFAULT FALSE;
+    ALTER TABLE "fs_access_group" ADD COLUMN "available" bool NOT NULL DEFAULT FALSE;
+    UPDATE "fs_access_group" SET "available"=TRUE;
+    
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ad_user_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ad_user_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ldap_user_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ldap_user_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ad_user_group_fs_ad_users";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ad_user_group_fs_ad_users"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_ldap_user_group_fs_ldap_users";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_ldap_user_group_fs_ldap_users"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "host_enc_spec" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "model" varchar(255) NOT NULL,
+        "vendor" varchar(255) NOT NULL,
+        "enclosures" text DEFAULT '',
+		"create" timestamp with time zone NOT NULL,
+		"update" timestamp with time zone NOT NULL
+    );
+	CREATE INDEX "host_enc_spec_model_vendor_idx" ON "host_enc_spec"("model", "vendor");
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "mapping_group";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "mapping_group"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+DROP TRIGGER IF EXISTS operation_feedback_insert on "target";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "target"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for models.FSQuotaTree
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "fs_quota_tree" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" text NOT NULL DEFAULT '' ,
+        "folder_id" bigint NOT NULL,
+        "size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0' ,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "name_existed" bool NOT NULL DEFAULT FALSE,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    ALTER TABLE "fs_share" ADD COLUMN "quota_tree_id" bigint;
+    ALTER TABLE "fs_share" ADD COLUMN "name" text NOT NULL DEFAULT '' ;
+    UPDATE "fs_share" SET "name" = (SELECT "name" FROM "fs_folder" WHERE "fs_share"."folder_id" = "fs_folder"."id") WHERE "type" = 'smb';
+    
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "fs_quota_tree";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "fs_quota_tree"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	ALTER TABLE "fs_gateway" ADD COLUMN network_address_id bigint DEFAULT '0';
+	UPDATE "fs_gateway" SET 
+	network_address_id = (
+		SELECT id FROM "network_address" 
+		WHERE ip = (
+			SELECT SPLIT_PART(gateway_ips, ',', 1) FROM "host" 
+			WHERE id = "fs_gateway".host_id
+		)
+		AND host_id = "fs_gateway".host_id 
+	)
+	WHERE "network_address_id" = 0;
+	
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	CREATE INDEX snapshot_volume_id_idx ON "snapshot" ("volume_id");
+	CREATE INDEX mapping_group_volumes_volume_id_idx
+		ON "mapping_group_volumes" ("volume_id");
+	CREATE INDEX mapping_group_volumes_mapping_group_id_idx
+		ON "mapping_group_volumes" ("mapping_group_id");
+	CREATE INDEX lun_volume_id_idx ON "lun" ("volume_id");
+	CREATE INDEX client_client_group_id_idx ON "client" ("client_group_id");
+	CREATE INDEX volume_sn_idx ON "volume" ("sn");
+	
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	CREATE INDEX task_not_before_idx ON "task" ("not_before");
+	CREATE INDEX task_priority_idx ON "task" ("priority");
+	
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	ALTER TABLE fs_user 
+	DROP CONSTRAINT fs_user_name_key, 
+	ADD CONSTRAINT fs_user_name_type_key UNIQUE (name, type);
+  	
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	ALTER TABLE "service" ADD COLUMN "etag" varchar(36) NOT NULL DEFAULT '';
+	
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: ALTER TABLE "nfs_gateway" ADD COLUMN "etag" varchar(36) NOT NULL DEFAULT '';
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	ALTER TABLE fs_access_group 
+	DROP CONSTRAINT fs_access_group_name_key,
+	ADD CONSTRAINT fs_access_group_name_type_key UNIQUE (name, type);
+  	
+2018/11/20 00:11:01 [I] [migration.go:110] end upgrade: V3215_20180806_162429
+2018/11/20 00:11:01 [I] [migration.go:110] start upgrade V400_20180810_145011
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.OSSearchEngine"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "os_search_engine" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "gateway_data_size" bigint NOT NULL,
+        "gateway_flavor_id" bigint NOT NULL,
+        "gateway_http_port" bigint NOT NULL,
+        "gateway_transport_port" bigint NOT NULL,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "xsky-demon/models.OSSearchGateway"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "os_search_gateway" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "host_id" bigint,
+        "pool_id" bigint,
+		"search_engine_id" bigint,
+        "status" varchar(256) NOT NULL DEFAULT '' ,
+        "action_status" varchar(256) NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    ALTER TABLE "object_storage_zone" ADD COLUMN "tier_type" varchar(256) NOT NULL DEFAULT '';
+    ALTER TABLE "object_storage_gateway" ADD COLUMN "zone_id" bigint;
+    
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+    -- --------------------------------------------------
+    --  Table Structure for "models.NetworkDiagnosis"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "network_diagnosis" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "networks" text NOT NULL DEFAULT '' ,
+        "status" text NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "models.NetworkDiagnosisItem"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "network_diagnosis_item" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "networks" text NOT NULL DEFAULT '' ,
+        "src_address_id" bigint,
+        "dst_address_id" bigint,
+        "diagnosis_id" bigint,
+        "stat_id" bigint,
+        "status" text NOT NULL DEFAULT '' ,
+        "message" text NOT NULL DEFAULT '' ,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL,
+        "execute" timestamp with time zone,
+        "finish" timestamp with time zone
+    );
+
+    -- --------------------------------------------------
+    --  Table Structure for "models.NetworkDiagnosisStat"
+    -- --------------------------------------------------
+    CREATE TABLE IF NOT EXISTS "network_diagnosis_stat" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "bandwidth" bigint NOT NULL DEFAULT 0 ,
+        "send_pkgs" bigint NOT NULL DEFAULT 0 ,
+        "recv_pkgs" bigint NOT NULL DEFAULT 0 ,
+        "coll_pkgs" bigint NOT NULL DEFAULT 0 ,
+        "lost_pkg_ratio" double precision NOT NULL DEFAULT 0 ,
+        "err_pkg_ratio" double precision NOT NULL DEFAULT 0 ,
+        "send_bytes" bigint NOT NULL DEFAULT 0 ,
+        "recv_bytes" bigint NOT NULL DEFAULT 0 ,
+        "t_c_p_conn_errs" bigint NOT NULL DEFAULT 0 ,
+        "t_c_p_segment_retrans" bigint NOT NULL DEFAULT 0
+    );
+    
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: ALTER TABLE "license" ADD COLUMN "uuid" varchar(255) NOT NULL DEFAULT '';
+2018/11/20 00:11:01 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "virtual_machine" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+        "uuid" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+        "flavor_id" bigint NOT NULL,
+        "host_id" bigint NOT NULL,
+        "image_id" bigint NOT NULL,
+        "root_volume_id" bigint UNIQUE,
+        "root_file" text,
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "action_status" varchar(255) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+	CREATE TABLE IF NOT EXISTS "vm_image" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(255) NOT NULL DEFAULT '',
+        "type" varchar(255) NOT NULL DEFAULT '',
+        "pool_id" bigint,
+        "snapshot_id" bigint UNIQUE,
+        "file" text,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL,
+        UNIQUE("name", "pool_id")
+    );
+
+	CREATE TABLE IF NOT EXISTS "vm_network_interface" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(255) NOT NULL DEFAULT '',
+		"vm_id" bigint NOT NULL,
+        "network_type" varchar(255) NOT NULL DEFAULT '',
+        "ip_address" varchar(255) NOT NULL DEFAULT '' ,
+        "netmask" varchar(255) NOT NULL DEFAULT '' ,
+        "gateway" varchar(255) NOT NULL DEFAULT '' ,
+        "nat_config" text DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+	CREATE TABLE IF NOT EXISTS "vm_disk" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "device_name" varchar(255) NOT NULL DEFAULT '',
+        "vm_id" bigint NOT NULL,
+        "volume_id" bigint NOT NULL
+    );
+
+	CREATE TABLE IF NOT EXISTS "vm_flavor" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(255) NOT NULL DEFAULT ''  UNIQUE,
+        "vcpus" bigint CHECK("vcpus" >= 0) NOT NULL DEFAULT 0,
+        "memory_kbyte" bigint CHECK("memory_kbyte" >= 0) NOT NULL DEFAULT 0,
+        "root_disk_size" bigint CHECK("root_disk_size" >= 0) NOT NULL DEFAULT 0,
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+	INSERT INTO "vm_flavor" ("id", "name", "vcpus", "memory_kbyte", "root_disk_size", "create", "update") VALUES
+         (1, 'low', 2, 4194304, 21474836480, '2018-10-18'::timestamp, '2018-10-18'::timestamp),
+         (2, 'medium', 4, 8388608, 21474836480, '2018-10-18'::timestamp, '2018-10-18'::timestamp),
+         (3, 'high', 8, 16777216, 21474836480, '2018-10-18'::timestamp, '2018-10-18'::timestamp);
+	
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "object_storage_bucket" ADD COLUMN "bucket_policy" text NOT NULL DEFAULT '';
+        ALTER TABLE "object_storage_bucket" ADD COLUMN "policy_enabled" bool NOT NULL DEFAULT '0';
+    
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "cluster" ADD COLUMN "version" varchar(256) NOT NULL DEFAULT '';
+        ALTER TABLE "remote_cluster" ADD COLUMN "version" varchar(256) NOT NULL DEFAULT '';
+        ALTER TABLE "remote_cluster" ADD COLUMN "connected" bool NOT NULL DEFAULT '0';
+    
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+CREATE TABLE IF NOT EXISTS "host_initialization" (
+    "id" serial NOT NULL PRIMARY KEY,
+    "admin_ips" varchar(256) NOT NULL DEFAULT '' ,
+    "hostname_prefix" varchar(256) NOT NULL DEFAULT '' ,
+    "ssh_user" varchar(256) NOT NULL DEFAULT '' ,
+    "ssh_password" varchar(256) NOT NULL DEFAULT '' ,
+    "set_hostname" bool NOT NULL DEFAULT 'false' ,
+    "disable_firewalld" bool NOT NULL DEFAULT 'false' ,
+    "message" text NOT NULL DEFAULT '' ,
+    "status" varchar(256) NOT NULL DEFAULT '' ,
+    "create" timestamp with time zone NOT NULL
+);
+    
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: ALTER TABLE "access_path" ADD COLUMN "iqn" varchar(255) NOT NULL DEFAULT '';
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+	CREATE TABLE IF NOT EXISTS "vip_group" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"name" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+		"network" varchar(255) NOT NULL DEFAULT '',
+		"resource_type" varchar(255) NOT NULL DEFAULT '',
+		"resource_id" bigint NOT NULL,
+		"implementation" varchar(255) NOT NULL DEFAULT '',
+		"preempt" bool NOT NULL DEFAULT 'true',
+		"action_status" varchar(255) NOT NULL DEFAULT '',
+		"status" varchar(255) NOT NULL DEFAULT '',
+		"create" timestamp with time zone NOT NULL,
+		"update" timestamp with time zone NOT NULL
+	);
+	CREATE INDEX "vip_group_resource_type_resource_id_idx" ON "vip_group" ("resource_type", "resource_id");
+	CREATE TABLE IF NOT EXISTS "vip_group_network_addresses" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"vip_group_id" bigint NOT NULL,
+		"network_address_id" bigint NOT NULL
+	);
+	CREATE INDEX "vip_group_network_addresses_vip_group_id_idx" ON "vip_group_network_addresses" ("vip_group_id");
+	CREATE INDEX "vip_group_network_addresses_network_address_id_idx" ON "vip_group_network_addresses" ("network_address_id");
+	CREATE TABLE IF NOT EXISTS "vip" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"vip_group_id" bigint NOT NULL,
+		"ip" varchar(128) NOT NULL DEFAULT '' UNIQUE,
+		"mask" INTEGER NOT NULL DEFAULT 32,
+		"virtual_router_id" bigint NOT NULL,
+		"default_vip_instance_id" bigint NULL,
+		"current_vip_instance_id" bigint NULL,
+		"action_status" varchar(255) NOT NULL DEFAULT '',
+		"status" varchar(255) NOT NULL DEFAULT '',
+		"create" timestamp with time zone NOT NULL,
+		"update" timestamp with time zone NOT NULL
+	);
+	CREATE INDEX "vip_vip_group_id_idx" ON "vip" ("vip_group_id");
+	CREATE TABLE IF NOT EXISTS "vip_instance" (
+		"id" serial NOT NULL PRIMARY KEY,
+		"vip_id" bigint NOT NULL,
+		"network_address_id" bigint NOT NULL,
+		"priority" bigint NOT NULL,
+		"action_status" varchar(255) NOT NULL DEFAULT '',
+		"status" varchar(255) NOT NULL DEFAULT '',
+		"create" timestamp with time zone NOT NULL,
+		"update" timestamp with time zone NOT NULL
+	);
+	CREATE INDEX "vip_instance_vip_id_idx" ON "vip_instance" ("vip_id");
+	CREATE INDEX "vip_instance_network_address_id_idx" ON "vip_instance" ("network_address_id");
+	
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+	ALTER TABLE "fs_quota_tree" ADD COLUMN "soft_quota_size" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0', ADD COLUMN "used_kbyte" bigint CHECK("size" >= 0) NOT NULL DEFAULT '0';
+	
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+	ALTER TABLE "object_storage_bucket" ADD COLUMN "metadata_search_enabled" bool NOT NULL DEFAULT FALSE;
+	
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "s3_load_balancer" ADD COLUMN "search_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer" ADD COLUMN "search_https_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer" ADD COLUMN "sync_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer" ADD COLUMN "roles" varchar(256) NOT NULL DEFAULT '';
+        UPDATE s3_load_balancer SET roles='access';
+        ALTER TABLE "s3_load_balancer_group" ADD COLUMN "search_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer_group" ADD COLUMN "search_https_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer_group" ADD COLUMN "sync_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer_group" ADD COLUMN "admin_port" bigint NOT NULL DEFAULT '0';
+        ALTER TABLE "s3_load_balancer_group" ADD COLUMN "roles" varchar(256) NOT NULL DEFAULT '';
+		ALTER TABLE "s3_load_balancer_group" ADD COLUMN "ssl_certificate_id" bigint;
+        UPDATE s3_load_balancer_group SET roles='access';
+        UPDATE s3_load_balancer_group SET admin_port = (SELECT admin_port FROM s3_load_balancer WHERE s3_load_balancer.group_id = s3_load_balancer_group.id);
+        UPDATE s3_load_balancer_group SET ssl_certificate_id = (select id from ssl_certificate where type = 's3' and enabled = true);
+    
+2018/11/20 00:11:02 [I] [migration.go:159] exec sql: 
+    CREATE TABLE IF NOT EXISTS "dp_fs_snapshot_policy" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "name" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+        "cron_expr" text NOT NULL DEFAULT '',
+        "retained_max" bigint NOT NULL DEFAULT '1',
+        "dp_gateway_id" bigint NOT NULL,
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "create" timestamp with time zone NOT NULL,
+        "update" timestamp with time zone NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS "dp_fs_snapshot_job" (
+        "id" serial NOT NULL PRIMARY KEY,
+        "fs_folder_id" bigint,
+        "fs_snapshot_id" bigint,
+        "dp_fs_snapshot_policy_id" bigint NOT NULL,
+        "size" bigint NOT NULL DEFAULT '0',
+        "progress" double precision NULL,
+        "status" varchar(255) NOT NULL DEFAULT '',
+        "started_at" timestamp with time zone,
+        "updated_at" timestamp with time zone,
+        "finished_at" timestamp with time zone
+    );
+    CREATE INDEX "dp_fs_snapshot_job_dp_fs_snapshot_policy_id" 
+    	ON "dp_fs_snapshot_job" ("dp_fs_snapshot_policy_id");
+    CREATE INDEX "dp_fs_snapshot_job_fs_folder_id" 
+    	ON "dp_fs_snapshot_job" ("fs_folder_id");
+    CREATE INDEX "dp_fs_snapshot_job_fs_snapshot_id" 
+    	ON "dp_fs_snapshot_job" ("fs_snapshot_id");
+
+    ALTER TABLE "fs_folder" ADD COLUMN "dp_fs_snapshot_policy_id" bigint;
+    ALTER TABLE "fs_snapshot" ADD COLUMN "creator" varchar(255);
+    
+2018/11/20 00:11:03 [I] [migration.go:159] exec sql: 
+        ALTER TABLE "object_storage" ADD COLUMN "search_enabled" bool NOT NULL DEFAULT '0';
+        ALTER TABLE "object_storage" ADD COLUMN "multi_zone_enabled" bool NOT NULL DEFAULT '0';
+        ALTER TABLE "object_storage_zone" ADD COLUMN "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE;
+        ALTER TABLE "object_storage_zone" ADD COLUMN "alias" varchar(255) NOT NULL DEFAULT '';
+        ALTER TABLE "object_storage_zone" ADD COLUMN "connected" bool NOT NULL DEFAULT '0';
+        ALTER TABLE "object_storage_zone" ADD COLUMN "switch_status" varchar(255) NOT NULL DEFAULT '';
+        ALTER TABLE "object_storage_zone" ADD COLUMN "s3_load_balancer_group_id" bigint;
+        ALTER TABLE "object_storage_zone" ADD COLUMN "epoch_uuid" varchar(255) NOT NULL DEFAULT '';
+        ALTER TABLE "object_storage_zone" ADD COLUMN "remote_data" text NOT NULL DEFAULT '';
+        CREATE INDEX object_storage_zone_uuid_idx ON "object_storage_zone" ("uuid");
+        CREATE TABLE IF NOT EXISTS "os_zone_translog" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+            "resource_type" varchar(255) NOT NULL DEFAULT '',
+            "resource_uuid" varchar(255) NOT NULL DEFAULT '',
+            "action" varchar(255) NOT NULL DEFAULT '',
+            "create" timestamp with time zone NOT NULL,
+            "update" timestamp with time zone NOT NULL
+        );
+        CREATE INDEX os_zone_translog_uuid_idx ON "os_zone_translog" ("uuid");
+        CREATE TABLE IF NOT EXISTS "os_remote_policy" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+            "name" varchar(255) NOT NULL DEFAULT '',
+            "default" bool NOT NULL DEFAULT 'false',
+            "status" varchar(256) NOT NULL DEFAULT '',
+            "zone_uuid" varchar(255) NOT NULL DEFAULT '',
+            "create" timestamp with time zone NOT NULL,
+            "update" timestamp with time zone NOT NULL
+        );
+        CREATE INDEX os_remote_policy_uuid_idx ON "os_remote_policy" ("uuid");
+        CREATE INDEX os_remote_policy_zone_uuid_idx ON "os_remote_policy" ("zone_uuid");
+        CREATE TABLE IF NOT EXISTS "os_replication_zone" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+            "replication_uuid" varchar(255) NOT NULL DEFAULT '',
+            "os_zone_uuid" varchar(255) NOT NULL DEFAULT '',
+            "os_remote_policy_uuid" varchar(255) NOT NULL DEFAULT '',
+            "dirty" bool NOT NULL DEFAULT '0',
+            "status" varchar(256) NOT NULL DEFAULT '',
+            "create" timestamp with time zone NOT NULL,
+            "update" timestamp with time zone NOT NULL
+        );
+        CREATE INDEX os_replication_zone_uuid_idx ON "os_replication_zone" ("uuid");
+        CREATE INDEX os_replication_zone_ruuid_idx ON "os_replication_zone" ("replication_uuid");
+        CREATE TABLE IF NOT EXISTS "os_replication_path" (
+            "id" serial NOT NULL PRIMARY KEY,
+            "uuid" varchar(255) NOT NULL DEFAULT '' UNIQUE,
+            "replication_uuid" varchar(255) NOT NULL DEFAULT '',
+            "os_zone_uuids" varchar(255) NOT NULL DEFAULT '',
+            "suspended" bool NOT NULL DEFAULT '0',
+            "status" varchar(256) NOT NULL DEFAULT '',
+            "create" timestamp with time zone NOT NULL,
+            "update" timestamp with time zone NOT NULL
+        );
+        CREATE INDEX os_replication_path_uuid_idx ON "os_replication_path" ("uuid");
+        CREATE INDEX os_replication_path_ruuid_idx ON "os_replication_path" ("replication_uuid");
+        ALTER TABLE "object_storage_bucket" ADD COLUMN "replication_uuid" varchar(255) NOT NULL DEFAULT '';
+        ALTER TABLE "object_storage_bucket" ADD COLUMN "os_zone_uuid" varchar(255) NOT NULL DEFAULT '';
+        CREATE INDEX os_bucket_ruuid_idx ON "object_storage_bucket" ("replication_uuid");
+        CREATE INDEX os_bucket_zone_uuid_idx ON "object_storage_bucket" ("os_zone_uuid");
+   
+2018/11/20 00:11:04 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_fs_snapshot_policy";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_fs_snapshot_policy"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:11:04 [I] [migration.go:159] exec sql: 
+DROP TRIGGER IF EXISTS operation_feedback_insert on "dp_fs_snapshot_job";
+CREATE TRIGGER operation_feedback_insert AFTER INSERT OR UPDATE OR DELETE ON "dp_fs_snapshot_job"
+    FOR EACH ROW EXECUTE PROCEDURE operation_feedback_insert();
+
+2018/11/20 00:11:04 [I] [migration.go:110] end upgrade: V400_20180810_145011
+2018/11/20 00:11:04 [I] [migration.go:110] total success upgrade: 18  migration
+2018-11-20 00:11:06 [INFO] Starting xmsd ...
+Creating sds-xmd-api ... done
+2018-11-20 00:11:31 [INFO] Syncing index ...
+2018-11-20 00:12:07 [INFO] Successfully install boot
+2018-11-20 00:12:07 [INFO] Please visit http://10.255.101.73:8056 to continue the installation

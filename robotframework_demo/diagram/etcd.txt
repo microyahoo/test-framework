@@ -1,0 +1,9 @@
+具体参考"etcd/manager.go"
+1. 首先从配置文件读取AdminNetwork和DefaultAdminIP。 
+2. 初始化etcd manager时，会把对应的Host默认设置为agent节点。
+3. 初始化etcd后会检查相应的目录，如果目录不存在，则把相应的目录给建出来，如果是Boot node，则设置host为candidate节点。
+4. 检查etcd的/xms/db/master目录是否存在，如果不存在,则将当前db IP设置为master db IP。
+5. 同理，检查设置metric IP, 即设置/xms/metric。
+6. 在etcd中设置key为"/xms/hosts/'adminIP'", value为"role='hostRole'"
+7. 从etcd中读取admin IP的role, 然后和当前role进行对比，如果不一致则进行role切换，比方说初始时role为agent，读取etcd发现此admin IP为candidate，则进行role切换。
+9. 

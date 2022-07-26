@@ -1,0 +1,142 @@
+@startuml
+
+interface task.Task {
+	Init(*models.DemonModel) error
+	Run(*simplejson.Json) (interface{}, error)
+	SetData(string)
+
+	prepare() error
+	setType(string)
+	setPriority(int64)
+	setRetried(bool)
+	finish(error) error
+	process(*simplejson.Json) error
+	schedulableFunc() models.TaskSchedulableFunc
+}
+
+interface task.ResourceTask {
+	+Task
+
+	startStage(*simplejson.Json) (interface{}, error)
+	endStage(*simplejson.Json) (interface{}, error)
+	handleError(*simplejson.Json, error) error
+	resource() string
+	action() string
+	finishActionLog(e error) (err error)
+}
+
+class task.baseResourceTask {
+	baseTask
+	search.Helper
+	delegate         ResourceTask
+	autoFinishAction bool
+
+	actionLog           *models.ActionLog
+	disableNotification bool
+}
+
+class task.baseVolumeTask {
+	+baseResourceTask
+
+    -checkActionStatus(volume *models.Volume, allowedStatus ...string)
+    -checkStatus(volume *models.Volume, allowedStatus ...string)
+    -createRemoteBlockVolume(apic apiclient.Client, reqData []byte, query url.Values)
+    -deleteProgressInfo(id int64, action string)
+    -deleteVolumeAsync(volume *models.Volume, progress *models.ProgressInfo, pool string)
+    -deleteVolumeSync(volume *models.Volume, pool string)
+    -endStage(data *simplejson.Json)
+    -flattenVolumeAsync(volume *models.Volume, progress *models.ProgressInfo)
+    -getProgressInfo(id int64, action string)
+    -newTaskForSettingReplication(volume *models.Volume)
+    -resource()
+    -unsetVolumeReplication(volume *models.Volume)
+    -updateAndNotifyProgress(volume *models.Volume, progress *models.ProgressInfo, percentage int)
+    -updateReplProgress(volume *models.Volume, action string)
+}
+
+class task.TaskUpdateBlockVolume {
+	+baseVolumeTask
+
+    +Init(m *models.DemonModel) : error
+    -action() : string
+    -handleError(data *simplejson.Json, e error) : error
+    -process(data *simplejson.Json) : error
+    -resource() : string
+    -updateLunsQos(ap *models.AccessPath, volume *models.Volume, qos *models.VolumeQosSpec) : error
+    -updateLunsSize(at *models.AccessPath, volume *models.Volume, size uint64) : error
+}
+
+class task.baseTask {
+	+search.Helper
+
+	ctx      context.Context
+	dbSpan   opentracing.Span
+	m        *models.DemonModel
+	em       *external.Manager
+	etm      *etcd.Manager
+	mgr      *manager.Manager
+	metric   metrics.Manager
+	o        orm.Ormer
+	host     *models.Host
+	data     string
+	retried  bool
+	delegate Task
+	taskType string
+	priority int64
+
+	autoBeginTransaction bool
+	newAgentClient
+
+    +EM() : *external.Manager
+    +ETM() : *etcd.Manager
+    +Init(m *models.DemonModel) : error
+    +M() : *models.DemonModel
+    +Metric() : metrics.Manager
+    +Mgr() : *manager.Manager
+    +O() : orm.Ormer
+    +Run(data *simplejson.Json) : interface{}, error
+    +SetData(data string)
+    -addTracer() : func(error)
+    -beginTransaction() : error
+    -finish(e error) : error
+    -finishTransaction(e error) : error
+    -inTransaction(f func() error) : error
+    -newCmdTimeoutCtx(a ...time.Duration)
+    -newRPCTimeoutCtx(a ...time.Duration)
+    -newSSHTimeoutCtx(a ...time.Duration)
+    -newTask(typ string, data interface{}, host *models.Host)
+    -prepare() : error
+    -process(data *simplejson.Json) : error
+    -schedulableFunc() : models.TaskSchedulableFunc
+    -setDelegate(delegate Task)
+    -setPriority(priority int64)
+    -setRetried(retried bool)
+    -setType(typ string)
+}
+
+class agentrpc.Server {
+	+em *external.Manager
+	+m  *models.DemonModel
+
+    +M() : *models.DemonModel, error
+    +SetEM(em *external.Manager)
+    +WsNotify(ctx context.Context, req *pb.WsNotifyReq)
+    -parseTime(timestamp string) : time.Time, error
+}
+
+task.Task <|-- task.ResourceTask
+task.Task <|-- task.baseTask
+'search.Helper <|-- task.baseTask
+'models.DemonModel <-- task.baseTask
+'external.Manager <-- task.baseTask
+'etcd.Manager <-- task.baseTask
+'manager.Manager <-- task.baseTask
+'orm.Ormer o-- task.baseTask
+'metrics.Manager o-- task.baseTask
+'models.Host <-- task.baseTask
+task.baseTask <|-- task.baseResourceTask
+task.ResourceTask <|-- task.baseResourceTask
+task.baseResourceTask <|-- task.baseVolumeTask
+task.baseVolumeTask <|-- task.TaskUpdateBlockVolume
+
+@enduml

@@ -1,0 +1,77 @@
+@startuml
+
+participant "cron/access_path.go" as cap
+participant "models/access_path.go" as map 
+participant "models/target.go" as mt
+participant "models/lun.go" as ml
+participant "models/client.go" as mc
+participant "models/mapping_group.go" as mmg
+participant "models/client_lun_mapping.go" as mclm
+participant "external/target.go" as et
+
+cap -> cap: accessPathJob.run()
+activate cap #FFBBBB
+    cap -> map: ListAccessPaths()
+    cap -> cap: iterate for updateAP()
+    activate cap #Blue
+        cap -> mt: ListTargets(apid) - targets
+        cap -> mmg: ListMappingGroups(apid) - mappingGroups
+        cap -> mclm: ListClientLunMappingStatusByTargets(targets) - map[ClientLunKey][]status
+        cap -> cap: iterate for calcMappingGroupStatus(mapping_group, clmStatusMap)
+        activate cap #Green
+            cap -> mclm: ListClientLunKeysOfMappingGroup(mapping_group) - []ClientLunKey
+            cap -> cap: count the status 
+        deactivate cap
+        cap -> mmg: UpdateMappingGroup() if the status changed.
+        cap -> cap: calcAccessPathStatus(ap, targets, mappingGroups)
+        activate cap #FFBBBB
+            cap -> cap: count the targets status 
+            cap -> cap: count the mapping_group status 
+        deactivate cap
+        cap -> map: UpdateAccessPath(ap, 'Status') if the status changed.
+        cap -> cap: createAccessPathAlert(ap) if status changed.
+    deactivate cap
+deactivate cap
+
+== ==
+cap -> cap: targetJob.run()
+activate cap #FFBBBB
+    cap -> cap: loadAccessPathConfigs()
+    activate cap #Blue
+        cap -> mt: m.ListTargets(job.host.ID)
+        cap -> cap: iterarte for targets
+        activate cap #Green
+            cap -> ml: listLuns(apid)
+            cap -> mmg: ListMappingGroups(apid)        
+            cap -> cap: iterarte for mapping groups
+            activate cap #FFBBBB
+                cap -> mc: listClients(mp.cg.id)
+            deactivate cap
+            cap -> mclm: ListClientLunMappingsSimple(target.id)
+        deactivate cap
+    deactivate cap
+    cap -> et: ShowAccessPath() - apInfoMap
+    cap -> cap: checkAPs(apInfoMap)
+    activate cap #Blue
+        cap -> cap: checkDeleteExtraAPs(apInfoMap)        
+        cap -> cap: isFolderAccessPath(apID)
+        cap -> mt: ListTargets(job.host.ID, ap.id)
+        cap -> cap: deleteAPFromXdc() if DB not exists 
+        cap -> cap: iterate for job.apConfigMap
+        activate cap #Green
+            cap -> cap: checkTarget(apConfig, apInfoMap) 
+            activate cap #FFBBBB
+                cap -> mt: ListTargets(job.host.ID, ap.id)
+                cap -> cap: checkDeleteXXXTarget(target, apInfo) if ap existed in xdc
+                cap -> et:  CreateAccessPath() if ap not existed in xdc
+                cap -> cap: checkCreateXXXTarget(target, apInfo) if ap not existed in xdc
+            deactivate cap
+            cap -> cap: iterate for job.apConfigMap
+            activate cap #FFBBBB
+                cap -> cap: updateResourceStatus()
+            deactivate cap
+        deactivate cap
+    deactivate cap
+deactivate cap
+
+@enduml

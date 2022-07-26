@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg viewBox="0 0 840 722" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs id="defs_block">
+    <filter height="1.504" id="filter_blur" inkspace:collect="always" width="1.1575" x="-0.07875" y="-0.252">
+      <feGaussianBlur id="feGaussianBlur3780" inkspace:collect="always" stdDeviation="4.2" />
+    </filter>
+  </defs>
+  <title>blockdiag</title>
+  <desc>seqdiag {
+    activation = none;
+    authenticator -&gt; peer [label = "link establishment"];
+    peer --&gt; authenticator;
+    authenticator -&gt; peer [label = "\"challenge\" message"];
+    peer -&gt; authenticator [label = "response hash value", rightnote="a value calculated using a one-way hash function on the challenge and the secret combined"];
+    authenticator --&gt; authenticator [label = "check the hash value"];
+    authenticator -&gt; peer [label = "ack", color=green];
+    authenticator -&gt; peer [label = "failed", failed, color=red];
+    ... repeat at random intervals...
+}
+</desc>
+  <polygon fill="rgb(0,0,0)" points="339,314 819,314 827,322 827,331 339,331 339,314" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="67" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="259" y="46" />
+  <path d="M 128 80 L 128 618" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <path d="M 128 626 L 128 650" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="2 8" />
+  <path d="M 128 658 L 128 710" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <path d="M 320 80 L 320 618" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <path d="M 320 626 L 320 650" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="2 8" />
+  <path d="M 320 658 L 320 710" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="64" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="128" y="65">authenticator</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="256" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="22" x="320" y="66">peer</text>
+  <path d="M 136 134 L 312 134" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="304,130 312,134 304,138" stroke="rgb(0,0,0)" />
+  <path d="M 136 184 L 312 184" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="144,180 136,184 144,188" stroke="rgb(0,0,0)" />
+  <path d="M 136 250 L 312 250" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="304,246 312,250 304,254" stroke="rgb(0,0,0)" />
+  <path d="M 136 316 L 312 316" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="144,312 136,316 144,320" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="336,308 816,308 824,316 824,325 336,325 336,308" stroke="rgb(0,0,0)" />
+  <path d="M 816 308 L 816 316" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 816 316 L 824 316" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="464" x="576" y="323">a value calculated using a one-way hash function on the challenge and the secret combined</text>
+  <path d="M 136 392 L 224 392" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 224 392 L 224 408" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 224 408 L 136 408" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="144,404 136,408 144,412" stroke="rgb(0,0,0)" />
+  <path d="M 136 472 L 312 472" fill="none" stroke="rgb(0,128,0)" />
+  <polygon fill="rgb(0,128,0)" points="304,468 312,472 304,476" stroke="rgb(0,128,0)" />
+  <path d="M 136 552 L 216 552" fill="none" stroke="rgb(255,0,0)" />
+  <polygon fill="rgb(255,0,0)" points="208,548 216,552 208,556" stroke="rgb(255,0,0)" />
+  <path d="M 224 544 L 240 560" fill="none" stroke="rgb(255,0,0)" />
+  <path d="M 224 560 L 240 544" fill="none" stroke="rgb(255,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="88" x="184" y="132">link establishment</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="102" x="191" y="248">"challenge" message</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="101" x="261" y="314">response hash value</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="107" x="189" y="384">check the hash value</text>
+  <text fill="rgb(0,128,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="18" x="149" y="470">ack</text>
+  <text fill="rgb(255,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="26" x="153" y="550">failed</text>
+  <rect fill="white" height="20" stroke="white" width="154" x="147" y="628" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="134" x="224" y="644">repeat at random intervals</text>
+</svg>

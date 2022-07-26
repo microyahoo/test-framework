@@ -1,0 +1,549 @@
+@startuml
+
+class beego.Controller {
+}
+
+class controllers.DemonController {
+    +beego.Controller
+    +search.Helper
+
+    -ctx          context.Context
+    -dbSpan       opentracing.Span
+    -model        *models.DemonModel
+    -etm          *etcd.Manager
+    -mgr          *manager.Manager
+    -orm          orm.Ormer
+    -metric       metrics.Manager
+    -host         *models.Host
+    -actionLog    *models.ActionLog
+
+    +Accepted(data interface{})
+    +Created(data interface{})
+    +EM() : *external.Manager
+    +ETM() : *etcd.Manager
+    +Finish()
+    +M() : *models.DemonModel
+    +Mgr() : *manager.Manager
+    +Prepare()
+    +UnmarshalJSONBody(v interface{}, keys ...string)
+    +Validate(sche string, document ...string)
+}
+
+class manager.Manager {
+    -m      *models.DemonModel
+    -em     *external.Manager
+    -etm    *etcd.Manager
+    -metric metrics.Manager
+
+    +EM() : *external.Manager
+    +ETM() : *etcd.Manager
+    +M() : *models.DemonModel
+    +Metric() : metrics.Manager
+}
+
+class models.DemonModel {
+    +PagingResult QueryParams
+
+    -orm          orm.Ormer
+    -em           *external.Manager
+    -etm          *etcd.Manager
+    -host         *Host
+
+    +Begin() : error
+    +BeginTx(ctx context.Context, opts *sql.TxOptions)
+    +BeginWithRepeatableRead() : error
+    +Commit() : error
+    +EM() : *external.Manager
+    +ETM() : *etcd.Manager
+    +GetResourceInstance(resourceName string, resourceID int64)
+    +Host() : *Host
+    +InTransaction(f func() error) : error
+    +O() : orm.Ormer
+    +Orm() : orm.Ormer
+    +Rollback() : error
+    +SetEM(em *external.Manager)
+    +SetETM(etm *etcd.Manager)
+    +SetHost(host *Host)
+    +SetOrm(orm orm.Ormer)
+    +CountTasks(params QueryParams)
+    +CreateTask(task *Task)
+    +DeleteFinishedWebsockets(before time.Time)
+    +DeleteTask(task *Task)
+    +GetTask(taskID int64)
+    +ListPendingTasks(notBefore time.Time, concurrentLimit ...int64)
+    +ListPendingWebsocketTasks(notBefore time.Time, concurrentLimit ...int64)
+    +ListTasks(params QueryParams, orders ...string)
+    +NewTask(t string, data interface{}, host *Host, priority ...int64)
+    +UpdateTask(t *Task, keys ...string)
+}
+
+interface external.externalInterface {
+    -init(em *Manager) error
+}
+
+interface external.CephInterface {
+    +ActivateOsd()
+    +AddBucket()
+    +AddCrush()
+    +AddFsDataPool()
+    ......
+}
+
+class external.cephExternal {
+    +externalBase
+}
+note bottom: register ceph to external Manager.
+
+class external.externalBase {
+    -em *Manager
+    -init(em *Manager) : error
+    -run()
+    -runCmd()
+    -ssh()
+    -sshVirt()
+}
+
+class external.Manager {
+    ctx        context.Context
+    Lock       sync.Mutex
+    cmds       []*Command
+
+    +Ceph       CephInterface
+    +Disk       DiskInterface
+    +Install    InstallInterface
+    +Service    ServiceInterface
+    +Net        NetInterface
+    +OS         OSInterface
+    +Rbd        RbdInterface
+    +Rgw        RgwInterface
+    +SSH        SSHInterface
+    +Target     TargetInterface
+    +License    LicenseInterface
+    +Time       TimeInterface
+    +Email      EmailInterface
+    +HTTP       HTTPInterface
+    +NFS        NFSInterface
+    +Docker     DockerInterface
+    +Auth       AuthInterface
+    +Snmp       SnmpInterface
+    +Virt       VirtInterface
+    +Ipt        IptablesInterface
+    +Keepalived KeepalivedInterface
+
+   ' -registerNewExternalFunc()
+
+    +Commands() : []*Command
+    +Context() : context.Context
+    +Init()
+    +ResetCommands()
+    +Rollback() : error
+    +SetContext(ctx context.Context)
+ 
+    -pushCommand(cmd *Command)
+}
+
+class etcd.Manager {
+    -kapi client.KeysAPI
+    -mapi client.MembersAPI
+
+    -em *external.Manager
+
+    -adminNetwork       string
+    -adminIP            string
+    -hostRole           string
+    -primaryIP          string
+    -candidateIPs       []string
+    -masterDbIP         string
+    -metricIP           string
+    -primaryKeyNotFound bool
+    -roleChanged        bool
+
+    +AddMember(adminIP string) : *client.Member, error
+    +AdminIP() : string
+    +CandidateIPs() : []string
+    +EM() : *external.Manager
+    +IsAgent() : bool
+    +IsCandidate() : bool
+    +IsMasterDb() : bool
+    +IsPrimary() : bool
+    +KeepAlive(key, value string, ttl time.Duration)
+    +KeepPrimary()
+    +ListCandidates() : []string, error
+    +ListHosts() : []string, error
+    +ListMemberMap() : map[string]string, error
+    +ListMembers() : []client.Member, error
+}
+
+class controllers.ClientController { 
+   +DemonController
+
+   +GetClient()
+   +ListClients()
+}
+
+class controllers.baseAccessPathController {
+    DemonController
+
+    -checkActionStatus()
+    -checkClientGroupStatus()
+    -checkClientSessionOnTarget()
+    -checkGetVolumes()
+    -checkHostOnline()
+    -checkHostPortType()
+    -createLun()
+    -createMappingGroup()
+    -createMappingsByClientGroup()
+    -createTarget()
+   .........
+}
+
+class controllers.AccessPathController {
+    -baseAccessPathController
+ 
+    -chapExisted() : bool
+    -checkAccessPathCreateReq(req *AccessPathCreateReq)
+    -checkNameUsed(name string)
+    -checkTypePermissionInLicense(t string)
+    -getNewAccessPath(apID int64)
+    -updateAccessPath(ap *models.AccessPath)
+
+    +CreateAccessPath()
+    +DeleteAccessPath()
+    +GetAccessPath()
+    +ListAccessPaths()
+    +UpdateAccessPath()
+}
+
+class controllers.ClientController {
+	+DemonController
+
+    +GetClient()
+    +ListClients()
+}
+
+class controllers.ClientCodeController {
+	+DemonController
+
+    +ClearClientCodes()
+    +DeleteClientCode()
+    +ListClientCodes()
+    -checkClientCodeType(t string)
+}
+
+class controllers.ClientGroupController {
+    +DemonController
+
+    +CreateClientGroup()
+    +DeleteClientGroup()
+    +GetClientGroup()
+    +ListClientGroups()
+    +UpdateClientGroup()
+
+    -checkStatus()
+}
+
+class search.Helper {
+    mgr *manager.Manager
+}
+
+interface beego.ControllerInterface {
+    +Init()
+    +Prepare()
+    +Get()
+    +Post()
+    +Delete()
+    +Put()
+    +Head()
+    +Patch()
+    +Options()
+    +Finish()
+    +Render() error
+    +XSRFToken() string
+    +CheckXSRFCookie() bool
+    +HandlerFunc(fn string) bool
+    +URLMapping()
+}
+
+interface metrics.Manager {
+   +DeleteCloudInstanceStat()
+   +DeleteClusterStat()
+   +DeleteDiskStat()
+   +DeleteFSFolderStat()
+   +DeleteHostStat()
+   +DeleteNFSGatewayStat()
+   +DeleteNetworkInterfaceStat()
+   +DeleteObjectStorageBucketStat()
+   +DeleteObjectStorageGatewayStat()
+   +DeleteObjectStorageUserStat()
+   +DeleteOsdStat()
+   +DeletePartitionStat()
+   +DeletePoolStat()
+   +DeleteS3LoadBalancerStat()
+   +DeleteVolumeStat()
+   +GetCloudInstanceStats()
+   +GetClusterStats()
+   +GetDiskStats()
+   +GetFSFolderStats()
+   +GetHostStats()
+   +GetNFSGatewayStats()
+   +GetNetworkInterfaceStats()
+   +GetObjectStorageBucketStats()
+   +GetObjectStorageGatewayStats()
+   +GetObjectStorageUserStats()
+   +GetOsdStats()
+   +GetPartitionStats()
+   +GetPoolStats()
+   +GetS3LoadBalancerStats()
+   +GetVolumeStats()
+   +Host()
+   +Init()
+}
+
+class metrics.prometheusManager {
+    +sync.Mutex
+    -host   string
+    -client prometheus.Client
+    -api    prometheus.QueryAPI
+    -etm    *etcd.Manager
+}
+
+class cron.JobManager {
+    -mode           string
+    -lock           sync.Mutex
+    -m              *models.DemonModel
+    -em             *external.Manager
+    -etm            *etcd.Manager
+    -o              orm.Ormer
+    -registeredJobs map[string]Job
+    -c              *cron.Cron
+    -stop           chan bool
+    -host           *models.Host
+
+    +Init() : error
+    +Start()
+    +Stop()
+
+    -addCronJob(job Job, stop chan bool)
+    -checkRoles(job Job) : bool
+    -currentJobRoles() : []string
+    -jobNames() : []string
+    -registerJob(jobs ...Job)
+}
+
+interface cron.Job {
+   -cronExpression() : string
+   -dependOnCeph() : bool
+   -enabled() : bool
+   -externalManager() : *external.Manager
+   -finish() : error
+   -init(...bool) : error
+   -interval() : time.Duration
+   -prepare(context.Context) : error
+   -renew() : error
+   -reset()
+   -roles() : []string
+   -run() : error
+   -runDefers()
+   -runnable() : bool, error
+   -setInterval(duration time.Duration)
+   -setJobOptions([]jobOption)
+   -setName(string)
+   -types() : []string
+   .........
+}
+
+class cron.baseJob {
+    +search.Helper
+
+    -ctx                  context.Context
+    -dbSpan               opentracing.Span
+    -m                    *models.DemonModel
+    -em                   *external.Manager
+    -etm                  *etcd.Manager
+    -mgr                  *manager.Manager
+    -metric               metrics.Manager
+    -o                    orm.Ormer
+    -jm                   *JobManager
+    -host                 *models.Host
+    -locker               etcd.Locker
+    -jobName              string
+
+    -newAgentClient rpc.NewAgentClientFunc
+}
+
+class cron.clientCodeJob {
+    +baseJob
+
+    -addClientCodeByAt(ap *models.AccessPath) : error
+    -cronExpression() : string
+    -dependOnCeph() : bool
+    -name() : string
+    -run() : error
+}
+note bottom: register client code job to job Manager.
+
+class cron.accessPathJob {
+   +baseJob
+
+   -calcAccessPathStatus()
+   -calcMappingGroupStatus()
+   -createAccessPathAlert()
+   -cronExpression()
+   -dependOnCeph()
+   -name()
+   -roles()
+   -run()
+   -updateAP(ap *models.AccessPath)
+}
+
+class cron.targetJob {
+    +baseJob
+
+    -apConfigMap map[int64]*accessPathConfig
+
+    -checkAPs()
+    -checkClientLunMappings()
+    -checkCreateFCTarget()
+    -checkCreateISCSITarget()
+    -checkCreateLocalTarget()
+    -checkDeleteExtraAPs()
+    -checkDeleteFCTarget()
+    -checkDeleteISCSITarget()
+    -checkDeleteLocalTarget()
+    -checkLuns()
+    -checkTarget()
+    -cronExpression()
+    -deleteAPFromXdc()
+    -dependOnCeph()
+    -isFolderAccessPath()
+    -loadAccessPathConfigs()
+    -name()
+    -run()
+    -types()
+    -updateResourceStatus()
+}
+
+class models.Host {
+   +ActionStatus : string
+   +AdminIP : string
+   +CPUModel : string
+   +ClockDiff : int64
+   +Cores : int
+   +DiskNum : uint64
+   +Enclosures : JSONTextField
+   +FcPorts : []*HostFcPort
+   +GatewayIPs : string
+   +ID : int64
+   +IsMasterDb : bool
+   +Model : string
+   +Name : string
+   +Os : string
+   +PlacementNode : *PlacementNode
+   +Primary : bool
+   +PrivateIP : string
+   +PublicIPs : string
+   +Rack : string
+   +Roles : string
+   +RootDisk : *Disk
+   +Status : string
+   +Type : string
+}
+
+class cron.volumeBaseJob {
+	+baseJob
+	cacheLoaded bool
+}
+
+class cron.blockVolumeJob {
+	+volumeBaseJob
+
+    -boundVars() : []*string
+    -cronExpression() : string
+    -jobOptions() : []jobOption
+    -name() : string
+    -roles() : []string
+    -run() : error
+    -runnable() : bool, error
+    -updateBlockVolumeStats() : error
+}
+
+class cron.taskJob {
+	+baseJob
+
+    -cronExpression() : string
+    -dependOnCeph() : bool
+    -handleError(task *models.Task, e error) : error
+    -handleResourceError(task *models.Task, e error) : error
+    -handleTaskError(task *models.Task, e error) : error
+    -jobOptions() : []jobOption
+    -name() : string
+    -processTask(task *models.Task)
+    -roles() : []string
+    -run() : error
+    -triggerTask(task *models.Task) : error
+}
+note bottom: import task
+
+beego.ControllerInterface <|-- beego.Controller
+beego.Controller <|-- controllers.DemonController
+
+search.Helper <|-- controllers.DemonController
+models.DemonModel <-- controllers.DemonController
+etcd.Manager <-- controllers.DemonController
+manager.Manager <-- controllers.DemonController
+metrics.Manager o-- controllers.DemonController
+orm.Ormer o-- controllers.DemonController
+
+controllers.DemonController <|-- controllers.ClientGroupController
+controllers.DemonController <|-- controllers.baseAccessPathController
+controllers.baseAccessPathController <|-- controllers.AccessPathController
+controllers.DemonController <|-- controllers.ClientController
+controllers.DemonController <|-- controllers.ClientCodeController
+
+external.Manager <-- etcd.Manager
+external.externalBase <|-- external.cephExternal
+external.Manager <-- external.externalBase
+
+external.externalInterface <|-- external.CephInterface
+external.CephInterface <|-- external.cephExternal
+external.CephInterface o-- external.Manager
+
+'models.DemonModel <-- manager.Manager
+'etcd.Manager <-- manager.Manager
+'external.Manager <-- manager.Manager
+'metrics.Manager o-- manager.Manager
+manager.Manager <-- search.Helper
+
+metrics.Manager <|-- metrics.prometheusManager
+etcd.Manager <-- metrics.prometheusManager
+
+models.DemonModel <-- cron.JobManager
+external.Manager <-- cron.JobManager
+etcd.Manager <-- cron.JobManager
+orm.Ormer o-- cron.JobManager
+models.Host <-- cron.JobManager
+
+cron.Job <|-- cron.baseJob
+search.Helper <|-- cron.baseJob
+'orm.Ormer o-- cron.baseJob
+'models.DemonModel <-- cron.baseJob
+'external.Manager <-- cron.baseJob
+'etcd.Manager <-- cron.baseJob
+manager.Manager <-- cron.baseJob
+metrics.Manager o-- cron.baseJob
+cron.JobManager <-- cron.baseJob
+'models.Host <-- cron.baseJob
+
+cron.baseJob <|-- cron.clientCodeJob
+cron.baseJob <|-- cron.targetJob
+cron.baseJob <|-- cron.accessPathJob
+cron.baseJob <|-- cron.volumeBaseJob
+cron.baseJob <|-- cron.taskJob
+cron.volumeBaseJob <|-- cron.blockVolumeJob
+
+'orm.Ormer o-- models.DemonModel
+'external.Manager <-- models.DemonModel
+'etcd.Manager <-- models.DemonModel
+models.Host <-- models.DemonModel
+
+@enduml

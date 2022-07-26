@@ -1,0 +1,69 @@
+@startuml
+interface raft.Storage {
+   +Entries(lo, hi, maxSize uint64) : []pb.Entry, error
+   +FirstIndex() : uint64, error
+   +InitialState() : pb.HardState, pb.ConfState, error
+   +LastIndex() : uint64, error
+   +Snapshot() : pb.Snapshot, error
+   +Term(i uint64) : uint64, error
+}
+
+class raft.MemoryStorage {
+    +sync.Mutex
+
+    -ents : []pb.Entry
+    -hardState : pb.HardState
+    -snapshot : pb.Snapshot
+
+   +Append(entries []pb.Entry) : error
+   +ApplySnapshot(snap pb.Snapshot) : error
+   +Compact(compactIndex uint64) : error
+   +CreateSnapshot(i uint64, cs *pb.ConfState, data []byte) : pb.Snapshot, error
+   +Entries(lo, hi, maxSize uint64) : []pb.Entry, error
+   +FirstIndex() : uint64, error
+   +InitialState() : pb.HardState, pb.ConfState, error
+   +LastIndex() : uint64, error
+   +SetHardState(st pb.HardState) : error
+   +Snapshot() : pb.Snapshot, error
+   +Term(i uint64) : uint64, error
+
+   -firstIndex() : uint64
+   -lastIndex() : uint64
+}
+
+class raftpb.HardState {
+   +Commit : uint64
+   +Term : uint64
+   +Vote : uint64
+}
+
+class raftpb.ConfState {
+   +Nodes : []uint64
+}
+
+class raftpb.Snapshot {
+   +Data : []byte
+   +Metadata : SnapshotMetadata
+}
+
+class raftpb.SnapshotMetadata {
+   +ConfState : ConfState
+   +Index : uint64
+   +Term : uint64
+}
+
+class raftpb.Entry {
+   +Data : []byte
+   +Index : uint64
+   +Term : uint64
+   +Type : EntryType
+}
+
+raft.Storage  <|-- raft.MemoryStorage
+raftpb.HardState o-- raft.MemoryStorage
+raftpb.Snapshot o-- raft.MemoryStorage
+raftpb.Entry o-- raft.MemoryStorage
+raftpb.SnapshotMetadata o-- raftpb.Snapshot
+raftpb.ConfState o-- raftpb.SnapshotMetadata
+
+@enduml

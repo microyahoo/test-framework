@@ -1,0 +1,340 @@
+  674  git status
+  675  git branch
+  676  git pull
+  677  git checkout feature/xms-cli
+  678  git status
+  679  git branch
+  687  git status
+  688  git status
+  689  git branch
+  690  git checkout liang/demon
+  692  git status
+  695  git status
+  696  git rebase --help
+  697  git rebase --help
+  698  git rebase upstream master
+  699  git branch
+  700  git rebase master
+  701  git status
+  703  git checkout -- external/iptables.go 
+  704  git status
+  705  git rebase master
+  706  git stash --help
+  707  git stash list
+  708  #git stash Makefile build/make/go-generate 
+  709  git diff
+  710  git stash Makefile build/make/go-generate 
+  711  git stash
+  712  git stash list
+  713  git stash show
+  714  git status
+  716  git rebase master
+  718  ll .git/rebase-apply/
+  721  git status
+  722  git diff
+  723  git add tasks/base.go 
+  724  git rebase --continue
+  726  git fetch platform/master
+  727  git fetch upstream
+  728  git-config
+  729  git config -e
+  731  git diff
+  732  git add models/base.go 
+  733  git rebase --continue
+  734  git rebase --abort
+  736  git status
+  737  git rebase upstream/master
+  741  git status
+  743  git add rpc/agent/proto/agent.proto 
+  744  git rebase --continue
+  747  git add rpc/agent/proto/agent.proto 
+  748  git rebase --continue
+  750  git rebase --abort
+  752  git status
+  755  git archive --help
+  756  git log --pretty=oneline
+  757  git diff 54cc1f712484da3632953490a381d9f0cc7ec212 0f1c959ab6ac57f19dddbd8645272eca63b15150 > diff1
+  759  git log --pretty=oneline
+  760  git log --pretty=oneline | grep -A1 "
+  761  git log --pretty=oneline | grep -A1 "9bb70ed"
+  762  git log --pretty=oneline | grep -B1 "9bb70ed"
+  763  git diff 9bb70ed98afb91e6f5019ecb7c755579c9984eae > diff
+  767  git diff 9bb70ed98afb91e6f5019ecb7c755579c9984eae > diff1
+  769  git diff 
+  770  git diff 78861ee > diff1
+  771  git diff 9bb70ed98afb91e6f5019ecb7c755579c9984eae > diff1
+  772  git diff 78861ee > diff2
+  774  git diff 531cce8 > diff3
+  775  git diff 
+  776  git diff 533c98f > diff4
+  777  git diff 0f1c959 > diff5
+  778  git diff 216b38d > diff6
+  779  git diff 65753c0 > diff7
+  783  git fetch
+  784  git checkout demon/liang/clientcode
+  785  git status
+  788  git status
+  789  git status
+  790  git log
+  791  git status
+  792  git rebase upstream/master
+  794  git rebase --continue
+  795  git adde rpc/agent/proto/agent.proto 
+  796  git add rpc/agent/proto/agent.proto 
+  797  git rebase --continue
+  800  git add rpc/agent/proto/agent.proto 
+  801  git rebase --continue
+  804  git add  rpc/agent/access_path.go 
+  805  git rebase --continue
+  806  git add rpc/agent/proto/agent.proto 
+  807  git rebase --continue
+  809  git status
+  810  git diff
+  811  git log
+  812  git status
+  813  git fetch upstream
+  814  git status
+  815  git pull
+  816  git status
+  818  git status
+  819  git log
+  820  git remote -v
+  821  git status
+  822  git push
+  823  git status
+  825  git log 
+  826  git log --oneline
+  827  git branch
+  829  git branch -vv
+  831  git remote -vv
+  832  git fetch upstream
+  833  git checkout -b ap/clientcodes upstream/master
+  834  git branch -vv
+  835  git branch --unset-upstream
+  836  git branch -vv
+  837  git log --oneline
+  838  git apply diff1
+  839  git apply < diff1
+  840  git patch < diff1
+  841  git --help
+  842  man git
+  843  git apply --help
+  845  git branch
+  851  git branch
+  852  git checkout liang/demon
+  853  git log --oneline | grep -B1 9bb70ed 
+  854  git diff --help
+  855  git diff 681b3e695 9bb70ed98 > patch1
+  857  git log --oneline | grep -B1 -A1 9bb70ed 
+  858  git diff ef60aa067 9bb70ed98 > patch1
+  861  git log --oneline | grep -B1 -A1 78861ee
+  862  git diff d4670c202 78861ee70 > patch2
+  865  git show --help
+  866  git show 9bb70ed > patch1
+  869  git show 78861ee > patch2
+  871  git branch
+  872  git checkout ap/clientcodes
+  873  git apply patch1
+  874  git diff
+  875  git apply --help
+  876  git apply --ignore-space-change patch1
+  881  git patch --help
+  882  git apply --help
+  883  git apply --ignore-space-change patch1
+  886  git apply --verbose --ignore-space-change patch1
+  887  git status
+  888  git cherry-pick 9bb70ed
+  889  git status
+  890  git diff rpc/agent/proto/agent.proto 
+  892  git st
+  893  git status
+  894  git add -u
+  895  git status
+  896  git cherry-pick --continue
+  897  git show HEAD
+  898  git cherry-pick 78861ee
+  899  git status
+  901  git st
+  902  git status
+  903  git add -u
+  904  git status
+  905  git cherry-pick --continue
+  906  git log -n2
+  907  git reset HEAD^
+  908  git st
+  909  git status
+  910  git add -u
+  911  git commit --amend
+  912  git log -n2
+  913  git show HEAD
+  914  history | grep -i git > history
+  916  git status
+  918  git log -n2
+  919  git cherry-pick 
+  920  git cherry-pick 
+  921  git cherry-pick 531cce8
+  924  git status
+  925  git add rpc/agent/access_path.go 
+  928  git add -u
+  930  git status
+  933  git show HEAD
+  935  git commit --amend
+  937  git cherry-pick --continue
+  938  git show HEAD
+  939  git log -n2
+  941  git commit --amend
+  942  git status
+  944  git show HEAD
+  946  git reset --help
+  947  git reset HEAD
+  949  git log -n2
+  952  git show HEAD
+  954  git cherry-pick533c98f
+  955  git cherry-pick 533c98f
+  956  git status
+  957  git show HEAD
+  958  git status
+  959  git status
+  960  git cherry-pick 
+  961  git cherry-pick 0f1c959
+  962  git show HEAD
+  963  git cherry-pick 216b38d
+  964  git status
+  965  git cherry-pick 65753c0
+  966  git status
+  967  git log
+  968  git status
+  969  git show
+  970   git show HEAD
+  971  git status
+  972  git cherry-pick continue
+  973  git status
+  974  git lgo
+  975  git log
+  976  git status
+  978  git status
+  983  git show branch
+  984  git show-branch
+  985  git show-branch --more=10
+  988  git branch -vv
+  993  git status
+  995  git log --oneline
+  997  git branch -vv
+  999  git checkout -b liang/clientcodes upstream/master
+ 1000  git branch -vv
+ 1002  git branch --unset-upstream
+ 1003  git branch -vv
+ 1005  git cherry-pick 9bb70ed
+ 1006  git status
+ 1008  git add rpc/agent/proto/agent.proto 
+ 1010  git status
+ 1011  git cherry-pick --continue
+ 1012  git status
+ 1013  git diff
+ 1014  git show HEAD
+ 1015  git status
+ 1019  git cherry-pick 78861ee
+ 1020  git status
+ 1021  git cherry-pick --continue
+ 1022  git status
+ 1023  git show HEAD
+ 1024  git cherry-pick 78861ee
+ 1025  git status
+ 1026  git rpc/agent/proto/agent.proto 
+ 1028  git add rpc/agent/proto/agent.proto 
+ 1029  git status
+ 1030  git cherry-pick --continue
+ 1031  git show HEAD
+ 1033  git log
+ 1034  git status
+ 1035  git show HEADS
+ 1036  git show HEAD
+ 1038  git cherry-pick 531cce802b3c7c2d389ca7cc3f67be98e9cb82bd
+ 1039  git status
+ 1042  git addm rpc/agent/proto/agent.proto 
+ 1043  git add rpc/agent/proto/agent.proto rpc/agent/access_path.go 
+ 1044  git status
+ 1045  git cherry-pick --continue
+ 1046  git status
+ 1047  git cherry-pick 533c98f0a8df8873c54e5085ac240f4c8ee84072
+ 1048  git status
+ 1049  git cherry-pick 0f1c959ab6ac57f19dddbd8645272eca63b15150
+ 1050  git cherry-pick 216b38d8923fd91a5efb628e10a5b8c4f655c1d2
+ 1051  git status
+ 1052  git show HEAD
+ 1053  git cherry-pick 65753c0ecc8705ba5c782e54e45d7ec932ac4f31
+ 1054  git show HEAD
+ 1058  git log 
+ 1061  #git reset HEAD^
+ 1063  git reset HEAD^
+ 1064  git show HEAD
+ 1065  git log
+ 1066  git status
+ 1067  git diff
+ 1069  git log --oneline
+ 1070  git status
+ 1071  git status
+ 1072  git diff
+ 1073  git log
+ 1078  git show HEAD
+ 1080  git log -n2
+ 1081  git log -n8
+ 1083  git reset HEAD^
+ 1084  git log
+ 1085  git status
+ 1086  git diff
+ 1087  git status
+ 1088  git reset HEAD^
+ 1089  git status
+ 1091  git log
+ 1092  git reset HEAD^
+ 1093  git status
+ 1094  git show
+ 1095  git status
+ 1096  git log
+ 1097  git reset HEAD^
+ 1098  git log
+ 1099  git reset HEAD^
+ 1100  git status
+ 1101  git diff
+ 1102  git log
+ 1103  git reset HEAD^
+ 1104  git status
+ 1105  git diff > diff
+ 1113  git status
+ 1114  git add --help
+ 1115  git status
+ 1116  git log
+ 1117  git status
+ 1118  git remote -v
+ 1119  git status
+ 1120  git log
+ 1121  git remote -v
+ 1122  git remote update --help
+ 1123  git remote --help
+ 1124  git show-branch --more=4
+ 1125  history | grep -i git > history2
+ 1132  git show
+ 1133  git show HEAD
+ 1134  git status
+ 1135  git log
+ 1136  git status
+ 1137  git diff models/client_test.go 
+ 1138  git remote -v
+ 1139  git status
+ 1140  git remote -v
+ 1141  git add -p
+ 1142  git status
+ 1143  git add models/client_test.go 
+ 1144  git status
+ 1145  #git commit -sm "
+ 1146  git remote -v
+ 1147  git commit --help
+ 1148  git status
+ 1154  git show
+ 1155  git show HEAD
+ 1156  git log
+ 1157  git status
+ 1158  git diff
+ 1161  git status
+ 1170  history | grep -i git > history3

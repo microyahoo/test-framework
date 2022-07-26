@@ -1,0 +1,11 @@
+seqdiag {
+    activation = none;
+    authenticator -> peer [label = "link establishment"];
+    peer --> authenticator;
+    authenticator -> peer [label = "\"challenge\" message"];
+    peer -> authenticator [label = "response hash value", rightnote="a value calculated using a one-way hash function on the challenge and the secret combined"];
+    authenticator --> authenticator [label = "check the hash value"];
+    authenticator -> peer [label = "ack", color=green];
+    authenticator -> peer [label = "failed", failed, color=red];
+    ... repeat at random intervals...
+}

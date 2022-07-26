@@ -1,0 +1,105 @@
+@startuml
+
+actor User #red
+participant main.go as main
+participant "etcd/manager.go" as etcd_mgr
+participant "external/manager.go" as ext_mgr
+participant "database/db.go" as db
+participant "etcd/watch.go" as watch
+participant "metrics/manager.go" as metr_mgr
+participant "self/init.go" as self_init
+participant "models/base.go" as models_base
+participant "cron/manager.go" as cron_mgr
+participant "cron/base.go" as cron_base
+participant "cron.v2/cron.go" as v2_cron
+
+User -> main: xmsd
+activate main #FFBBBB
+    main -> main: runServer()
+        activate main #DarkSalmon
+            main -> main: cmd.InitBeego()
+            main -> main: cmd.InitLogger()
+            main -> main: cmd.InitSysSignalManager()
+            main -> main: cmd.InitEtcd()
+            activate main #FFBBBB
+                main -> etcd_mgr: Init() 
+                activate etcd_mgr #DarkSalmon
+                    etcd_mgr -> ext_mgr: CreateManager()
+                    activate ext_mgr #FFBBBB
+                        ext_mgr -> ext_mgr: Init()
+                        note left 
+                            register all the external functions.
+                        end note
+                    deactivate ext_mgr
+                deactivate etcd_mgr
+                main -> etcd_mgr: Start() 
+                activate etcd_mgr #DarkSalmon
+                    etcd_mgr -> etcd_mgr: checkCreateDir()
+                    etcd_mgr -> etcd_mgr: checkSaveMasterDb()
+                    etcd_mgr -> etcd_mgr: checkSaveMetricIP()
+                    etcd_mgr -> etcd_mgr: checkSaveHost()
+                    etcd_mgr -> etcd_mgr: SetHostRole()
+                    etcd_mgr -> etcd_mgr: sync host role to etcd
+                    etcd_mgr -> etcd_mgr: refreshPrimaryIP()
+                    etcd_mgr -> etcd_mgr: refreshMetricIP()
+                    etcd_mgr -> etcd_mgr: refreshMasterDbIP()
+                    etcd_mgr -> etcd_mgr: ListCandidates()
+                    etcd_mgr -> etcd_mgr: checkDbSwitched()
+                    etcd_mgr -> db: RegisterDb()
+                    activate db #DarkSalmon
+                        db -> db: registerDatabase()
+                    deactivate db 
+                    etcd_mgr -> etcd_mgr: checkDbConnLimitation()
+                    etcd_mgr -> watch: startWatchers()
+                deactivate etcd_mgr
+            deactivate main
+            main -> main: cmd.InitMetric()
+            activate main #DarkSalmon
+                main -> metr_mgr: Init()
+            deactivate main
+            main -> main: initFilters()
+            main -> main: initWorkEnv()
+            activate main #DarkSalmon
+                main -> self_init: InitializeSysConfigs()
+                main -> self_init: InitializeCluster()
+                activate self_init #DarkSalmon
+                    self_init -> models_base: InitCluster() ???
+                deactivate self_init 
+                main -> self_init: InitializeBootNode()
+                activate self_init #DarkSalmon
+                    self_init -> models_base: InitBootNode() ???
+                deactivate self_init 
+                main -> self_init: IsAvailableInCluster()
+                main -> self_init: InitializeClusterProperties()
+                activate self_init #DarkSalmon
+                    self_init -> models_base: InitializeClusterProperties() ???
+                deactivate self_init 
+                main -> self_init: InitializeLicense()
+                main -> self_init: InitializeService()
+                activate self_init #DarkSalmon
+                    self_init -> models_base: InitService()
+                deactivate self_init 
+                main -> self_init: InitializeAlertRules()
+                main -> self_init: InitializeHostEncSpecs()
+                main -> self_init: InitializeOsdDisk()
+                main -> self_init: InitializeDiskOptions()
+            deactivate main
+            main -> main: initSearch()
+            main -> main: startRPCServer()
+            note right: register agent server and admin server.
+            main -> main: runWebsocket()
+            main -> main: runCronJobs()
+            activate main #DarkSalmon
+                main -> cron_mgr: Init()
+                main -> cron_mgr: Start() &
+                activate cron_mgr #DarkSalmon
+                   cron_mgr -> cron_base: init() 
+                   cron_mgr -> cron_mgr: addCronJob()
+                   cron_mgr -> v2_cron: Start()
+                deactivate cron_mgr
+            deactivate main
+            main -> main: beego.Run()
+        deactivate main
+deactivate main
+
+@enduml
