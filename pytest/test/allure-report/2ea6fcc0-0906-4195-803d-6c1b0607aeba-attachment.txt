@@ -1,0 +1,7 @@
+
+start: 2022-07-26 13:49:13
+
+Succeed to connect redis:6379
+
+Succeed to close redis:6379
+ Time cost: 0.014s

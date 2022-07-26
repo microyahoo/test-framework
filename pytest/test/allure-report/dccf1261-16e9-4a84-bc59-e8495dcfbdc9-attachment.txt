@@ -1,0 +1,5 @@
+
+Succeed to connect elasticsearch:9200
+
+Succeed to close elasticsearch:9200
+ Time cost: 0.001s
